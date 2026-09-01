@@ -1,6 +1,11 @@
 package com.hiroto99.windowslib.core.autodatagen;
 
 import com.hiroto99.windowslib.core.autodatagen.annotation.AddTag;
+import net.neoforged.neoforge.common.util.DeferredSoundType;
+import net.neoforged.neoforge.registries.DeferredBlock;
+import net.neoforged.neoforge.registries.DeferredHolder;
+import net.neoforged.neoforge.registries.DeferredItem;
+import net.neoforged.neoforge.registries.DeferredRegister;
 import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
 import org.reflections.util.ConfigurationBuilder;
@@ -37,6 +42,15 @@ public class AutoDataGenEngine {
                 AddTag ann = field.getAnnotation(AddTag.class);
 
                 if (value != null) {
+                    if (value instanceof DeferredHolder<?, ?> holder) {
+                        value = holder.get();
+                    }
+                    if (value instanceof DeferredItem<?> holder) {
+                        value = holder.get();
+                    }
+                    if (value instanceof DeferredBlock<?> holder) {
+                        value = holder.get();
+                    }
                     COLLECTED_DATA_TAG.add(new DataEntryTag(ann, value));
                 }
             } catch (IllegalAccessException e) {
