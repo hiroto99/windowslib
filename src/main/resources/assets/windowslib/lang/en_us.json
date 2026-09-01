@@ -1,0 +1,13 @@
+{
+  "itemGroup.windowslib": "Example Mod Tab",
+  "block.windowslib.example_block": "Example Block",
+  "item.windowslib.example_item": "Example Item",
+
+  "windowslib.configuration.title": "WindowsLib Configs",
+  "windowslib.configuration.section.windowslib.common.toml": "WindowsLib Configs",
+  "windowslib.configuration.section.windowslib.common.toml.title": "WindowsLib Configs",
+  "windowslib.configuration.items": "Item List",
+  "windowslib.configuration.logDirtBlock": "Log Dirt Block",
+  "windowslib.configuration.magicNumberIntroduction": "Magic Number Text",
+  "windowslib.configuration.magicNumber": "Magic Number"
+}
