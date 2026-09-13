@@ -1,5 +1,7 @@
 package com.hiroto99.windowslib;
 
+import com.hiroto99.windowslib.core.autodatagen.AutoDataGenEngine;
+import com.hiroto99.windowslib.datagen.AutoDataGenProvider;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
