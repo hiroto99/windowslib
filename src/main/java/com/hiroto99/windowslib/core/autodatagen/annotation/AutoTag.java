@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface AddTag {
+public @interface AutoTag {
     TagType tagtype() default TagType.NONE; // タグ生成カテゴリー
     String[] tagKeyPath() default {}; // 生成してもらうタグ
 }

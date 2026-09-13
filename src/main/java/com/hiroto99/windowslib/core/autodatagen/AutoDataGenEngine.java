@@ -1,11 +1,9 @@
 package com.hiroto99.windowslib.core.autodatagen;
 
-import com.hiroto99.windowslib.core.autodatagen.annotation.AddTag;
-import net.neoforged.neoforge.common.util.DeferredSoundType;
+import com.hiroto99.windowslib.core.autodatagen.annotation.AutoTag;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
-import net.neoforged.neoforge.registries.DeferredRegister;
 import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
 import org.reflections.util.ConfigurationBuilder;
@@ -20,7 +18,7 @@ public class AutoDataGenEngine {
     public static final List<DataEntryTag> COLLECTED_DATA_TAG = new ArrayList<>();
 
     // データの持ち運び用（Java record で簡潔に定義）
-    public record DataEntryTag(AddTag annotation, Object value) {}
+    public record DataEntryTag(AutoTag annotation, Object value) {}
 
     public static List<DataEntryTag> scanPackage(String packageName) {
         // タグ生成アノテーションのスキャン
@@ -33,13 +31,13 @@ public class AutoDataGenEngine {
         );
 
         // @AutoDataGen が付与されたフィールドを全自動検出
-        Set<Field> fields = reflections.getFieldsAnnotatedWith(AddTag.class);
+        Set<Field> fields = reflections.getFieldsAnnotatedWith(AutoTag.class);
 
         for (Field field : fields) {
             try {
                 // static フィールドからオブジェクト（ItemやBlockのインスタンス）を取得
                 Object value = field.get(null);
-                AddTag ann = field.getAnnotation(AddTag.class);
+                AutoTag ann = field.getAnnotation(AutoTag.class);
 
                 if (value != null) {
                     if (value instanceof DeferredHolder<?, ?> holder) {
@@ -58,9 +56,5 @@ public class AutoDataGenEngine {
             }
         }
         return COLLECTED_DATA_TAG;
-    }
-
-    public void register(String packageName) {
-        scanPackage(packageName);
     }
 }
