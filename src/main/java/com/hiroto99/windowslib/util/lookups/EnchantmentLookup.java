@@ -1,4 +1,4 @@
-package com.hiroto99.windowslib.util;
+package com.hiroto99.windowslib.util.lookups;
 
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
@@ -6,7 +6,6 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.core.HolderGetter;
-import java.util.Optional;
 
 public class EnchantmentLookup {
 

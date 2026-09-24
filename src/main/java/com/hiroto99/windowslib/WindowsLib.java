@@ -1,6 +1,5 @@
 package com.hiroto99.windowslib;
 
-import com.hiroto99.windowslib.core.autodatagen.AutoDataGenEngine;
 import com.hiroto99.windowslib.datagen.AutoDataGenProvider;
 import org.slf4j.Logger;
 
@@ -69,6 +68,9 @@ public class WindowsLib {
         // Register the commonSetup method for modloading
         modEventBus.addListener(this::commonSetup);
 
+        // This is a `register` statement used to make the AutoDataGenEngine recognize it.
+        AutoDataGenProvider.register("com.hiroto99.windowslib");
+
         // Register the Deferred Register to the mod event bus so blocks get registered
         BLOCKS.register(modEventBus);
         // Register the Deferred Register to the mod event bus so items get registered
@@ -83,6 +85,7 @@ public class WindowsLib {
 
         // Register the item to a creative tab
         modEventBus.addListener(this::addCreative);
+        modEventBus.addListener(AutoDataGenProvider::gatherData);
 
         // Register our mod's ModConfigSpec so that FML can create and load the config file for us
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);

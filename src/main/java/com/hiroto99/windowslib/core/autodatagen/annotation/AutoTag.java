@@ -7,6 +7,6 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface AutoTag {
-    TagType tagtype() default TagType.NONE; // タグ生成カテゴリー
+    Class<? extends TagType<?>> tagtype(); // タグ生成カテゴリー
     String[] tagKeyPath() default {}; // 生成してもらうタグ
 }

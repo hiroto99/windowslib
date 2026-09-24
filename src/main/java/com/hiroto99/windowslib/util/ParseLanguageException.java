@@ -1,4 +1,4 @@
-package com.hiroto99.windowslib.util.exception;
+package com.hiroto99.windowslib.util;
 
 import java.io.Serial;
 

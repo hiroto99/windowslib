@@ -1,4 +1,4 @@
-package com.hiroto99.windowslib.util;
+package com.hiroto99.windowslib.util.lookups;
 
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.HolderSet;

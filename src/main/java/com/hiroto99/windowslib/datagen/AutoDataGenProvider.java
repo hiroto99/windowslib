@@ -7,11 +7,15 @@ import com.hiroto99.windowslib.core.autodatagen.AutoDataGenEngine.DataEntryLoot;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.data.PackOutput;
+import net.minecraft.data.loot.LootTableProvider;
+import net.minecraft.data.loot.LootTableProvider.SubProviderEntry;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.data.event.GatherDataEvent;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static com.hiroto99.windowslib.core.autodatagen.AutoDataGenEngine.COLLECTED_DATA_LOOT;
@@ -23,7 +27,7 @@ public class AutoDataGenProvider {
     public static List<DataEntryLoot> DATA_ENTRY_LOOT = new ArrayList<>();
 
     @SubscribeEvent
-    public static void gatherData(GatherDataEvent event) {
+    public static void gatherData(GatherDataEvent.Client event) {
         /*【Mod本体側で自分のパッケージを明示的にスキャン】
            ModIDs.stream().forEach(ModID -> {
                AutoDataGenEngine.scanPackage(ModID).forEach(dataEntryTag -> {
@@ -41,9 +45,17 @@ public class AutoDataGenProvider {
         CompletableFuture<HolderLookup.Provider> lookupProvider = event.getLookupProvider();
 
         // 共通API側で用意した自動プロバイダ、またはMod側のプロバイダを追加
-        generator.addProvider(true, new AutoItemTagProvider(packOutput, lookupProvider, WindowsLib.MODID));
-        generator.addProvider(true, new AutoBlockTagProvider(packOutput, lookupProvider, WindowsLib.MODID));
-        generator.addProvider(true, new AutoEntityTypeTagProvider(packOutput, lookupProvider, WindowsLib.MODID));
+        generator.addProvider(true, new UniversalAutoTagProvider(packOutput, lookupProvider, WindowsLib.MODID));
+        generator.addProvider(true, new LootTableProvider(packOutput, Set.of(), List.of(
+                new SubProviderEntry(
+                        AutoLootTableProvider::new,
+                        LootContextParamSets.CHEST
+                ),
+                new SubProviderEntry(
+                        AutoBlockLootProvider::new,
+                        LootContextParamSets.BLOCK
+                )), lookupProvider
+        ));
     }
 
     public static void register(String modPackagePath) {

@@ -1,4 +1,4 @@
-package com.hiroto99.windowslib.util;
+package com.hiroto99.windowslib.util.lookups;
 
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;

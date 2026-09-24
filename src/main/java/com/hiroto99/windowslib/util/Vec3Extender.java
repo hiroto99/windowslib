@@ -1,4 +1,4 @@
-package com.hiroto99.windowslib.util.extender;
+package com.hiroto99.windowslib.util;
 
 import net.minecraft.world.phys.Vec3;
 
