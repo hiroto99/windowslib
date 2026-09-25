@@ -1,17 +1,15 @@
 package com.hiroto99.windowslib.datagen;
 
 import com.hiroto99.windowslib.core.autodatagen.AutoDataGenEngine;
-import com.hiroto99.windowslib.core.autodatagen.ConditionsBuilder;
 import com.hiroto99.windowslib.core.autodatagen.AutoDataGenEngine.DataEntryLoot;
-import com.hiroto99.windowslib.core.autodatagen.AutoDataGenEngine.LootTableData;
+import com.hiroto99.windowslib.core.autodatagen.ConditionsBuilder;
 import com.hiroto99.windowslib.core.autodatagen.annotation.AutoLootTable;
 import com.hiroto99.windowslib.core.autodatagen.annotation.LootTablePool;
 import com.hiroto99.windowslib.core.autodatagen.generatortypes.LootType;
 import net.minecraft.core.HolderLookup;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.data.loot.LootTableSubProvider;
-import net.minecraft.resources.Identifier;
-import net.minecraft.resources.ResourceKey;
+import net.minecraft.data.loot.EntityLootSubProvider;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.flag.FeatureFlags;
 import net.minecraft.world.level.storage.loot.LootPool;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.entries.LootItem;
@@ -22,27 +20,63 @@ import net.minecraft.world.level.storage.loot.providers.number.UniformGenerator;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiConsumer;
+import java.util.stream.Stream;
 
-import static com.hiroto99.windowslib.WindowsLib.MODID;
 import static com.hiroto99.windowslib.datagen.AutoDataGenProvider.DATA_ENTRY_LOOT;
 
-public record AutoLootTableProvider(HolderLookup.Provider registries) implements LootTableSubProvider {
+public class AutoEntityLootProvider extends EntityLootSubProvider {
+    HolderLookup.Provider registries;
+
+    // The constructor can be private if this class is an inner class of your loot table provider.
+    // The parameter is provided by the lambda in the LootTableProvider's constructor.
+    public AutoEntityLootProvider(HolderLookup.Provider lookupProvider) {
+        // The first parameter is a set of blocks we are creating loot tables for. Instead of hardcoding,
+        // we use our block registry and just pass an empty set here.
+        // The second parameter is the feature flag set, this will be the default flags
+        // unless you are adding custom flags (which is beyond the scope of this article).
+        super(FeatureFlags.DEFAULT_FLAGS, lookupProvider);
+        registries = lookupProvider;
+    }
+
     @Override
-    public void generate(BiConsumer<ResourceKey<LootTable>, LootTable.Builder> consumer) {
+    protected Stream<EntityType<?>> getKnownEntityTypes() {
+        List<EntityType<?>> entities = new ArrayList<>();
+
+        // 💡 あなたのエンジンが持つ全エントリーをループ
+        for (DataEntryLoot dataEntry : DATA_ENTRY_LOOT) {
+            // もしアノテーションがついている対象が「Block」のインスタンスであれば
+            if (dataEntry.value() instanceof EntityType<?> entityType) {
+                // 追加するルートテーブルタイプがブロックではなかったらスキップ
+                if (dataEntry.annotation().type() != LootType.ENTITY) {
+                    continue;
+                }
+                // 他のModのブロックであっても、ここにすべて詰め込む
+                entities.add(entityType);
+            }
+        }
+
+        return entities.stream();
+    }
+
+    // Actually add our loot tables.
+    @Override
+    public void generate() {
         for (DataEntryLoot entryLoot : DATA_ENTRY_LOOT) {
             AutoLootTable entryLootAnnotation = entryLoot.annotation();
-            if (entryLootAnnotation.type() != LootType.CHEST) {
+            if (entryLootAnnotation.type() != LootType.ENTITY) {
                 continue;
             }
-            List<LootTableData> lootTableData = new ArrayList<>();
+            if (!(entryLoot.value() instanceof EntityType<?> entityType)) {
+                continue;
+            }
+            List<AutoDataGenEngine.LootTableData> lootTableData = new ArrayList<>();
             LootTable.Builder lootTable = LootTable.lootTable();
             for (LootTablePool lootPoolData : entryLootAnnotation.pool()) {
                 LootPool.Builder lootPool = LootPool.lootPool();
                 for (String dropItemDataEntry : lootPoolData.dropItemData()) {
                     lootTableData.add(AutoDataGenEngine.dropItemDataDecode(dropItemDataEntry));
                 }
-                for (LootTableData lootTableDataEntry : lootTableData) {
+                for (AutoDataGenEngine.LootTableData lootTableDataEntry : lootTableData) {
                     LootPoolEntryContainer.Builder lootItem = LootItem.lootTableItem(lootTableDataEntry.item())
                             .setWeight(lootTableDataEntry.weight())
                             .setQuality(lootTableDataEntry.quality());
@@ -57,11 +91,7 @@ public record AutoLootTableProvider(HolderLookup.Provider registries) implements
                         .setBonusRolls(ConstantValue.exactly(lootPoolData.bonusRolls()));
                 lootTable = lootTable.withPool(lootPool);
             }
-            consumer.accept(ResourceKey.create(
-                    Registries.LOOT_TABLE,
-                    Identifier.fromNamespaceAndPath(entryLoot.MODID(), entryLootAnnotation.name())),
-                    lootTable
-            );
+            this.add(entityType, lootTable);
         }
     }
 }

@@ -1,5 +1,7 @@
 package com.hiroto99.windowslib.datagen;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import com.hiroto99.windowslib.core.autodatagen.AutoDataGenEngine.DataEntryTag;
 import com.hiroto99.windowslib.core.autodatagen.annotation.AutoTag;
 import com.hiroto99.windowslib.core.autodatagen.generatortypes.TagType;
@@ -67,8 +69,8 @@ public class UniversalAutoTagProvider implements DataProvider {
                     // 2. 💡 修正：serializeToJson() ではなく build() を使用する
                     // build() メソッドは List<TagEntry> を返します。
                     // これを Minecraft の標準仕様に従って JSON オブジェクトに変換します。
-                    com.google.gson.JsonObject jsonObject = new com.google.gson.JsonObject();
-                    com.google.gson.JsonArray jsonArray = new com.google.gson.JsonArray();
+                    JsonObject jsonObject = new JsonObject();
+                    JsonArray jsonArray = new JsonArray();
 
                     // tagBuilder.build() で溜め込んだ要素をループしてJSON配列に流し込む
                     tagBuilder.build().forEach(entry -> jsonArray.add(entry.toString()));
@@ -100,7 +102,7 @@ public class UniversalAutoTagProvider implements DataProvider {
         TagType<T> tagType = (TagType<T>) rawTagType;
         ResourceKey<Registry<T>> registryKey = tagType.getRegistry();
 
-        // 2. 💡 追加：不規則なオブジェクトから安全に ResourceLocation (ID) を逆引きする
+        // 2. 💡 追加：不規則なオブジェクトから安全に Identifier (ID) を逆引きする
         Identifier id = getRegistryId(provider, registryKey, rawValue);
 
         // 3. 💡 修正：このレジストリ用のタグマップを無ければ作る
@@ -111,13 +113,13 @@ public class UniversalAutoTagProvider implements DataProvider {
             // 💡 修正：TagBuilder.create() で新しく実体を生成し、そこに直接IDを追加する
             TagBuilder builder = tagsMap.computeIfAbsent(tagKey, k -> TagBuilder.create());
 
-            // 登録対象を要素として追加（型に依存せず ResourceLocation で一元管理されるため100%安全）
+            // 登録対象を要素として追加（型に依存せず Identifier で一元管理されるため100%安全）
             builder.addElement(id);
         }
     }
 
     /**
-     * 💡 NeoForge 21.x 対応：渡された不規則なオブジェクトから動的に ResourceLocation (ID) を取得する
+     * 💡 NeoForge 21.x 対応：渡された不規則なオブジェクトから動的に Identifier (ID) を取得する
      */
     @SuppressWarnings("unchecked")
     private <T> Identifier getRegistryId(HolderLookup.Provider provider, ResourceKey<Registry<T>> registryKey, Object value) {

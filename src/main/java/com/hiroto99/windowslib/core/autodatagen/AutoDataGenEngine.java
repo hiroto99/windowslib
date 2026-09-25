@@ -1,5 +1,6 @@
 package com.hiroto99.windowslib.core.autodatagen;
 
+import com.hiroto99.windowslib.WindowsLib;
 import com.hiroto99.windowslib.core.autodatagen.annotation.AutoLootTable;
 import com.hiroto99.windowslib.core.autodatagen.annotation.AutoTag;
 import com.hiroto99.windowslib.util.ParseLanguageException;
@@ -7,6 +8,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
+import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -25,7 +27,7 @@ public class AutoDataGenEngine {
 
     // データの持ち運び用（Java record で簡潔に定義）
     public record DataEntryTag(AutoTag annotation, Object value) {}
-    public record DataEntryLoot(AutoLootTable annotation, Object value) {}
+    public record DataEntryLoot(AutoLootTable annotation, Object value, String MODID) {}
 
     public static void scanPackage(String packageName) {
         // タグ生成アノテーションのスキャン
@@ -37,6 +39,15 @@ public class AutoDataGenEngine {
                         .forPackage(packageName)
                         .addScanners(Scanners.FieldsAnnotated)
         );
+
+        Set<Class<?>> types = reflections.getTypesAnnotatedWith(Mod.class);
+        Optional<String> MODID = Optional.empty();
+        for (Class<?> clazz : types) {
+            Mod ann = clazz.getAnnotation(Mod.class);
+            if (ann != null && !Objects.equals(ann.value(), packageName.replace(packageName.substring(0, packageName.lastIndexOf('.')), ""))) {
+                MODID = Optional.of(ann.value());
+            }
+        }
 
         // @AutoTag が付与されたフィールドを全自動検出
         Set<Field> fields = reflections.getFieldsAnnotatedWith(AutoTag.class);
@@ -83,7 +94,7 @@ public class AutoDataGenEngine {
                     if (value instanceof DeferredBlock<?> holder) {
                         value = holder.get();
                     }
-                    COLLECTED_DATA_LOOT.add(new DataEntryLoot(ann, value));
+                    COLLECTED_DATA_LOOT.add(new DataEntryLoot(ann, value, MODID.orElse(WindowsLib.MODID)));
                 }
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
