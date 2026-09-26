@@ -1,0 +1,220 @@
+(* -------------------------------------------------- *)
+(* Auto loot table                                    *)
+(* -------------------------------------------------- *)
+
+AutoLootTable
+    = "@AutoLootTable"
+      ,
+      "("
+      ,
+      AutoLootTableProperties
+      ,
+      ")"
+      ;
+
+AutoLootTableProperties
+    = PoolProperty
+      ,
+      { "," , AutoLootTableProperty }
+      ;
+
+AutoLootTableProperty
+    = NameProperty
+    | TypeProperty
+    | BlockTypeProperty
+    | OreDropsProperty
+    ;
+
+NameProperty
+    = "name"
+      ,
+      "="
+      ,
+      String
+      ;
+
+TypeProperty
+    = "type"
+      ,
+      "="
+      ,
+      LootType
+      ;
+
+BlockTypeProperty
+    = "blockType"
+      ,
+      "="
+      ,
+      LootBlockType
+      ;
+
+OreDropsProperty
+    = "oreDrops"
+      ,
+      "="
+      ,
+      ResourceLocation
+      ;
+
+PoolProperty
+    = "pool"
+      ,
+      "="
+      ,
+      "{"
+      ,
+      LootTablePool
+      ,
+      { "," , LootTablePool }
+      ,
+      "}"
+      ;
+
+(* -------------------------------------------------- *)
+(* Auto loot table pool                               *)
+(* -------------------------------------------------- *)
+
+LootTablePool
+    = "@LootTablePool"
+      ,
+      "("
+      ,
+      { LootTablePoolProperty }
+      ,
+      ")"
+      ;
+
+LootTablePoolProperty
+    =
+      PoolNameProperty
+    | RollsMinProperty
+    | RollsMaxProperty
+    | BonusRollsProperty
+    | ConditionProperty
+    | DropItemDataProperty
+    ;
+
+PoolNameProperty
+    = "name"
+      ,
+      "="
+      ,
+      String
+      ;
+
+RollsMinProperty
+    = "rollsMin"
+      ,
+      "="
+      ,
+      Float
+      ;
+
+RollsMaxProperty
+    = "rollsMax"
+      ,
+      "="
+      ,
+      Float
+      ;
+
+BonusRollsProperty
+    = "bonusRolls"
+      ,
+      "="
+      ,
+      Float
+      ;
+
+ConditionProperty
+    = "condition"
+      ,
+      "="
+      ,
+      Condition
+      ;
+
+DropItemDataProperty
+    = "dropItemData"
+      ,
+      "="
+      ,
+      "{"
+      ,
+      DropItemData
+      ,
+      { "," , DropItemData }
+      ,
+      "}"
+      ;
+
+(* -------------------------------------------------- *)
+(* DropItemData DSL                                   *)
+(* -------------------------------------------------- *)
+
+DropItemData
+    = Item
+      ,
+      "/"
+      ,
+      Weight
+      ,
+      "/"
+      ,
+      MinCount
+      ,
+      "/"
+      ,
+      MaxCount
+      ,
+      "/"
+      ,
+      FortuneMultiplier
+      ,
+      [ "/" , ConditionDSL ]
+      ;
+
+Item
+    = ResourceLocation ;
+
+Weight
+    = Integer ;
+
+MinCount
+    = Float ;
+
+MaxCount
+    = Float ;
+
+FortuneMultiplier
+    = Float ;
+
+ConditionDSL
+    = ConditionsBuilderDSL ;
+
+(* -------------------------------------------------- *)
+(* Enums                                              *)
+(* -------------------------------------------------- *)
+
+LootType
+    =
+      "NONE"
+    | "BLOCK"
+    | "CHEST"
+    | "ENTITY"
+    ;
+
+LootBlockType
+    =
+      "NO_DROPS"
+    | "DROP_SELF"
+    | "DROP_OTHER"
+    | "SILK_TOUCH_ONLY"
+    | "SILK_TOUCH_DISPATCH"
+    | "SILK_TOUCH_OR_SHEARS_ONLY"
+    | "SILK_TOUCH_OR_SHEARS_DISPATCH"
+    | "SHEARS_ONLY"
+    | "SHEARS_DISPATCH"
+    | "ORE"
+    ;
