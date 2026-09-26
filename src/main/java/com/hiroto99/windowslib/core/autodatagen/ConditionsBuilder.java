@@ -2,13 +2,12 @@ package com.hiroto99.windowslib.core.autodatagen;
 
 import com.hiroto99.windowslib.util.lookups.*;
 import net.minecraft.advancements.criterion.*;
+import net.minecraft.advancements.criterion.EntityPredicate.Builder;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
-import net.minecraft.core.HolderSet;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.clock.WorldClocks;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.level.Level;
@@ -57,7 +56,7 @@ public class ConditionsBuilder {
                 detectorConditionAndSendBracketDetector(condition, "all_of", AutoDataGenEngine.ConditionsMemoryMethodEnum.ALL_OF);
                 detectorConditionAndSendBracketDetector(condition, "any_of", AutoDataGenEngine.ConditionsMemoryMethodEnum.ANY_OF);
                 if (condition.startsWith("random_chance:")) {
-                    float randomChance = Float.parseFloat((clearMethodPart(condition, "random_chance:").split(":")[1]));
+                    float randomChance = Float.parseFloat((clearMethodPart(condition, "random_chance:")));
                     ConditionBuilders.add(LootItemRandomChanceCondition.randomChance(randomChance));
                 }
                 if (condition.startsWith("random_chance_with_looting_enchant/")) {
@@ -138,7 +137,7 @@ public class ConditionsBuilder {
                     ConditionBuilders.add(ExplosionCondition.survivesExplosion());
                 }
                 if (condition.startsWith("match_tool/")) {
-                    String[] conditionDict = clearMethodPart(condition, "table_bonus/").split(",");
+                    String[] conditionDict = clearMethodPart(condition, "match_tool/").split(",");
                     ItemPredicate.Builder matchToolBuilder = ItemPredicate.Builder.item();
                     for (String conditionPart : conditionDict) {
                         if (conditionPart.startsWith("#")) {
@@ -177,52 +176,61 @@ public class ConditionsBuilder {
                     }
                     ConditionBuilders.add(BonusLevelTableCondition.bonusLevelFlatChance(enchantment, chances));
                 }
-            }
-            if (condition.startsWith("entity_properties/")) {
-                LootContext.EntityTarget entityTarget = null;
-                HolderSet<EntityType<?>> entityType = null;
-                MobEffectsPredicate.Builder mobEffectsPredicate = MobEffectsPredicate.Builder.effects();
-                for (String conditionPart : clearMethodPart(condition, "entity_properties/").split(",")) {
-                    String[] conditionDict = conditionPart.split(":");
-                    if (conditionDict[0].equals("entity")) {
-                        if (conditionDict[1].equals("this")) {
-                            entityTarget = LootContext.EntityTarget.THIS;
+                if (condition.startsWith("entity_properties/")) {
+                    LootContext.EntityTarget entityTarget = null;
+                    EntityTypePredicate entityType = null;
+                    EntityPredicate.Builder vehicle = Builder.entity();
+                    MobEffectsPredicate.Builder mobEffectsPredicate = MobEffectsPredicate.Builder.effects();
+                    for (String conditionPart : clearMethodPart(condition, "entity_properties/").split(",")) {
+                        String[] conditionDict = conditionPart.split(":");
+                        if (conditionDict[0].equals("entity")) {
+                            if (conditionDict[1].equals("this")) {
+                                entityTarget = LootContext.EntityTarget.THIS;
+                            }
+                            if (conditionDict[1].equals("attacker")) {
+                                entityTarget = LootContext.EntityTarget.ATTACKER;
+                            }
+                            if (conditionDict[1].equals("direct_attacker")) {
+                                entityTarget = LootContext.EntityTarget.DIRECT_ATTACKER;
+                            }
+                            if (conditionDict[1].equals("attacking_player")) {
+                                entityTarget = LootContext.EntityTarget.ATTACKING_PLAYER;
+                            }
+                            if (conditionDict[1].equals("target_entity")) {
+                                entityTarget = LootContext.EntityTarget.TARGET_ENTITY;
+                            }
+                            if (conditionDict[1].equals("interacting_entity")) {
+                                entityTarget = LootContext.EntityTarget.INTERACTING_ENTITY;
+                            }
                         }
-                        if (conditionDict[1].equals("attacker")) {
-                            entityTarget = LootContext.EntityTarget.ATTACKER;
+                        if (conditionDict[0].equals("entity_type")) {
+                            entityType = new EntityTypePredicate(EntityTypeLookup.getHolderSet(provider, joinValueIfExist(conditionDict)));
                         }
-                        if (conditionDict[1].equals("direct_attacker")) {
-                            entityTarget = LootContext.EntityTarget.DIRECT_ATTACKER;
+                        if (conditionDict[0].equals("effects")) {
+                            for (int i = 1; i < conditionDict.length - 1; i++) {
+                                mobEffectsPredicate = mobEffectsPredicate.and(MobEffectLookup.getHolderSet(provider, conditionDict[i]));
+                            }
                         }
-                        if (conditionDict[1].equals("attacking_player")) {
-                            entityTarget = LootContext.EntityTarget.ATTACKING_PLAYER;
-                        }
-                        if (conditionDict[1].equals("target_entity")) {
-                            entityTarget = LootContext.EntityTarget.TARGET_ENTITY;
-                        }
-                        if (conditionDict[1].equals("interacting_entity")) {
-                            entityTarget = LootContext.EntityTarget.INTERACTING_ENTITY;
+                        if (conditionDict[0].equals("vehicle")) {
+                            vehicle = vehicle.entityType(new EntityTypePredicate(EntityTypeLookup.getHolderSet(provider, joinValueIfExist(conditionDict))));
                         }
                     }
-                    if (conditionDict[0].equals("entity_type")) {
-                        entityType = EntityTypeLookup.getHolderSet(provider, joinValueIfExist(conditionDict));
+                    if (entityTarget == null) {
+                        throw new NullPointerException("entity_properties:entity is null or invalid");
                     }
-                    if (conditionDict[0].equals("effects")) {
-                        for (int i = 1; i < conditionDict.length - 1; i++) {
-                            mobEffectsPredicate = mobEffectsPredicate.and(MobEffectLookup.getHolderSet(provider, conditionDict[i]));
-                        }
+                    if (entityType == null) {
+                        ConditionBuilders.add(LootItemEntityPropertyCondition.hasProperties(entityTarget,
+                                Builder.entity().effects(mobEffectsPredicate)
+                                        .vehicle(vehicle).build()
+                        ));
+                    } else {
+                        ConditionBuilders.add(LootItemEntityPropertyCondition.hasProperties(entityTarget,
+                                Builder.entity().entityType(entityType)
+                                        .effects(mobEffectsPredicate)
+                                        .vehicle(vehicle).build()
+                        ));
                     }
                 }
-                if (entityTarget == null) {
-                    throw new NullPointerException("entity_properties:entity is null or invalid");
-                }
-                if (entityType == null) {
-                    throw new NullPointerException("entity_properties:entity_type is null or invalid");
-                }
-                ConditionBuilders.add(LootItemEntityPropertyCondition.hasProperties(entityTarget,
-                        new EntityPredicate.Builder().entityType(new EntityTypePredicate(entityType))
-                                .effects(mobEffectsPredicate).build()
-                ));
             }
         }
         return ConditionBuilders;

@@ -8,6 +8,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.storage.loot.providers.number.UniformGenerator;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -102,24 +103,24 @@ public class AutoDataGenEngine {
         }
     }
 
-    public record LootTableData(Item item, int weight, int quality, String conditions) {}
+    public record LootTableData(Item item, int weight, UniformGenerator count, float fortuneMultiplier, String conditions) {}
 
     public static LootTableData dropItemDataDecode(String dropItemData) throws ParseLanguageException {
         String[] decodeData = dropItemData.split("/");
-        if (decodeData.length < 3) {
+        if (decodeData.length < 5) {
             throw new ParseLanguageException("Invalid drop item data format:\n" +
                     "Input: \"" + Arrays.toString(decodeData) + "\"\n" +
-                    "Correct format: \"item/weight/quality/conditions(nullable)\" (Example:[\"minecraft:dirt/3/1\"])");
+                    "Correct format: \"item/weight/min/max/fortune multiplier(can 0)/conditions(nullable)\" (Example:[\"minecraft:dirt/3/1/1/0\"])");
         }
         Identifier location = Identifier.parse(decodeData[0]);
         Optional<Holder.Reference<Item>> rawItem = BuiltInRegistries.ITEM.get(location);
         Item item = rawItem.map(Holder.Reference::value).orElse(null);
         StringBuilder decodeConditions = new StringBuilder();
-        for (int i = 3; i < decodeData.length; i++) {
+        for (int i = 5; i < decodeData.length; i++) {
             decodeConditions.append(decodeData[i]).append("/");
         }
         decodeConditions.delete(decodeConditions.length() - 1, decodeConditions.length());
-        return new LootTableData(item, Integer.parseInt(decodeData[1]), Integer.parseInt(decodeData[2]), decodeData.length > 3 ? decodeConditions.toString() : "");
+        return new LootTableData(item, Integer.parseInt(decodeData[1]), UniformGenerator.between(Float.parseFloat(decodeData[2]), Float.parseFloat(decodeData[3])), Float.parseFloat(decodeData[4]), decodeData.length > 5 ? decodeConditions.toString() : "");
     }
 
     enum ConditionsMemoryMethodEnum {

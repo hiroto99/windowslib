@@ -10,6 +10,6 @@ public @interface LootTablePool {
     float bonusRolls() default 0;
     // プールワイドの条件
     String condition() default "";
-    // 自身を落とさないときに落とすアイテム["アイテム名/weight/quality/条件(省略可能)"] (例:["minecraft:dirt/3/1"])
+    // 自身を落とさないときに落とすアイテム["アイテム名/weight/min/max/幸運エンチャントの受ける倍率(幸運エンチャントの影響を受けないなら0)/条件(省略可能)"] (例:["minecraft:dirt/3/1/1/0"])
     String[] dropItemData() default "";
 }
