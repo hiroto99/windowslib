@@ -54,6 +54,10 @@ public class AutoDataGenProvider {
                 new SubProviderEntry(
                         AutoBlockLootProvider::new,
                         LootContextParamSets.BLOCK
+                ),
+                new SubProviderEntry(
+                        AutoEntityLootProvider::new,
+                        LootContextParamSets.ENTITY
                 )), lookupProvider
         ));
     }
