@@ -1,0 +1,203 @@
+Conditions
+    = Condition , { ";" , Condition } ;
+
+Condition
+    = RandomChance
+    | RandomChanceWithLootingEnchant
+    | TimeCheck
+    | WeatherCheck
+    | DimensionCheck
+    | BiomeCheck
+    | SurvivesExplosion
+    | MatchTool
+    | EnchantmentActive
+    | TableBonus
+    | EntityProperties
+    | Inverted
+    | AllOf
+    | AnyOf
+    ;
+
+(* -------------------------------------------------- *)
+(* Boolean composition                                *)
+(* -------------------------------------------------- *)
+
+Inverted
+    = "inverted[" , Conditions , "]" ;
+
+AllOf
+    = "all_of[" , Conditions , "]" ;
+
+AnyOf
+    = "any_of[" , Conditions , "]" ;
+
+(* -------------------------------------------------- *)
+(* Basic conditions                                   *)
+(* -------------------------------------------------- *)
+
+RandomChance
+    = "random_chance:" , Float ;
+
+RandomChanceWithLootingEnchant
+    = "random_chance_with_looting_enchant/"
+      ,
+      "chance:" , Float
+      ,
+      [ "," , "per_level_above_first:" , Float ]
+      ;
+
+TimeCheck
+    = "time_check/"
+      ,
+      [ "clock:" , ResourceLocation , "," ]
+      ,
+      [ "period:" , Integer , "," ]
+      ,
+      [ "min:" , Integer , "," ]
+      ,
+      [ "max:" , Integer ]
+      ;
+
+WeatherCheck
+    = "weather_check/"
+      ,
+      WeatherOption
+      ,
+      { "," , WeatherOption }
+      ;
+
+WeatherOption
+    = "raining:" , Boolean
+    | "thundering:" , Boolean
+    ;
+
+DimensionCheck
+    = "dimension_check:" , ResourceLocation ;
+
+BiomeCheck
+    = "biome_check:" , ResourceLocation ;
+
+SurvivesExplosion
+    = "survives_explosion" ;
+
+MatchTool
+    = "match_tool/"
+      ,
+      ItemMatcher
+      ,
+      { "," , ItemMatcher }
+      ;
+
+ItemMatcher
+    = ResourceLocation
+    | TagKey ;
+
+EnchantmentActive
+    = "enchantment_active:" , Boolean ;
+
+TableBonus
+    = "table_bonus/"
+      ,
+      "enchantment:" , ResourceLocation
+      ,
+      ","
+      ,
+      "chances:"
+      ,
+      Float
+      ,
+      { ":" , Float }
+      ;
+
+(* -------------------------------------------------- *)
+(* Entity properties                                  *)
+(* -------------------------------------------------- *)
+
+EntityProperties
+    = "entity_properties/"
+      ,
+      EntityProperty
+      ,
+      { "," , EntityProperty }
+      ;
+
+EntityProperty
+    = EntityTargetProperty
+    | EntityTypeProperty
+    | EffectsProperty
+    | VehicleProperty
+    ;
+
+EntityTargetProperty
+    = "entity:"
+      ,
+      (
+          "this"
+        | "attacker"
+        | "direct_attacker"
+        | "attacking_player"
+        | "target_entity"
+        | "interacting_entity"
+      )
+      ;
+
+EntityTypeProperty
+    = "entity_type:" , ResourceLocation ;
+
+EffectsProperty
+    = "effects:"
+      ,
+      ResourceLocation
+      ,
+      { ":" , ResourceLocation }
+      ;
+
+VehicleProperty
+    = "vehicle:" , ResourceLocation ;
+
+(* -------------------------------------------------- *)
+(* Lexical elements                                   *)
+(* -------------------------------------------------- *)
+
+ResourceLocation
+    = Namespace , ":" , Path ;
+
+TagKey
+    = "#" , ResourceLocation ;
+
+Namespace
+    = Identifier ;
+
+Path
+    = Identifier
+      ,
+      { "_" | "-" | "/" | "." | IdentifierChar } ;
+
+Identifier
+    = IdentifierChar
+      ,
+      { IdentifierChar } ;
+
+IdentifierChar
+    = "a"…"z"
+    | "0"…"9"
+    | "_"
+    ;
+
+Boolean
+    = "true"
+    | "false"
+    ;
+
+Integer
+    = Digit
+      ,
+      { Digit } ;
+
+Float
+    = Integer
+      ,
+      [ "." , Integer ] ;
+
+Digit
+    = "0"…"9" ;
