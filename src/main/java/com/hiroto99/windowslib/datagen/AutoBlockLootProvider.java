@@ -17,6 +17,8 @@ import net.minecraft.world.level.storage.loot.LootPool;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.entries.LootItem;
 import net.minecraft.world.level.storage.loot.entries.LootPoolEntryContainer;
+import net.minecraft.world.level.storage.loot.functions.EnchantedCountIncreaseFunction;
+import net.minecraft.world.level.storage.loot.functions.SetItemCountFunction;
 import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
 import net.minecraft.world.level.storage.loot.providers.number.ConstantValue;
 import net.minecraft.world.level.storage.loot.providers.number.UniformGenerator;
@@ -115,7 +117,8 @@ public class AutoBlockLootProvider extends BlockLootSubProvider {
             for (AutoDataGenEngine.LootTableData lootTableDataEntry : lootTableData) {
                 LootPoolEntryContainer.Builder<?> lootItem = LootItem.lootTableItem(lootTableDataEntry.item())
                         .setWeight(lootTableDataEntry.weight())
-                        .setQuality(lootTableDataEntry.quality());
+                        .apply(SetItemCountFunction.setCount(lootTableDataEntry.count()))
+                        .apply(EnchantedCountIncreaseFunction.lootingMultiplier(registries, UniformGenerator.between(0.0F, lootTableDataEntry.fortuneMultiplier())));
 
                 for (LootItemCondition.Builder conditionsBuilder : new ConditionsBuilder().get(lootTableDataEntry.conditions(), registries)) {
                     lootItem = lootItem.when(conditionsBuilder);
@@ -141,7 +144,8 @@ public class AutoBlockLootProvider extends BlockLootSubProvider {
         }
         LootPoolEntryContainer.Builder<?> lootItem = LootItem.lootTableItem(lootTableData.item())
                 .setWeight(lootTableData.weight())
-                .setQuality(lootTableData.quality());
+                .apply(SetItemCountFunction.setCount(lootTableData.count()))
+                .apply(EnchantedCountIncreaseFunction.lootingMultiplier(registries, UniformGenerator.between(0.0F, lootTableData.fortuneMultiplier())));
 
         for (LootItemCondition.Builder conditionsBuilder : new ConditionsBuilder().get(lootTableData.conditions(), registries)) {
             lootItem = lootItem.when(conditionsBuilder);

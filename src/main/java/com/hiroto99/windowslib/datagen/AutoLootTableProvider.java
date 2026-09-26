@@ -16,6 +16,8 @@ import net.minecraft.world.level.storage.loot.LootPool;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.entries.LootItem;
 import net.minecraft.world.level.storage.loot.entries.LootPoolEntryContainer;
+import net.minecraft.world.level.storage.loot.functions.EnchantedCountIncreaseFunction;
+import net.minecraft.world.level.storage.loot.functions.SetItemCountFunction;
 import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
 import net.minecraft.world.level.storage.loot.providers.number.ConstantValue;
 import net.minecraft.world.level.storage.loot.providers.number.UniformGenerator;
@@ -24,7 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-import static com.hiroto99.windowslib.WindowsLib.MODID;
 import static com.hiroto99.windowslib.datagen.AutoDataGenProvider.DATA_ENTRY_LOOT;
 
 public record AutoLootTableProvider(HolderLookup.Provider registries) implements LootTableSubProvider {
@@ -45,7 +46,8 @@ public record AutoLootTableProvider(HolderLookup.Provider registries) implements
                 for (LootTableData lootTableDataEntry : lootTableData) {
                     LootPoolEntryContainer.Builder lootItem = LootItem.lootTableItem(lootTableDataEntry.item())
                             .setWeight(lootTableDataEntry.weight())
-                            .setQuality(lootTableDataEntry.quality());
+                            .apply(SetItemCountFunction.setCount(lootTableDataEntry.count()))
+                            .apply(EnchantedCountIncreaseFunction.lootingMultiplier(registries, UniformGenerator.between(0.0F, lootTableDataEntry.fortuneMultiplier())));
 
                     for (LootItemCondition.Builder conditionsBuilder : new ConditionsBuilder().get(lootTableDataEntry.conditions(), registries)) {
                         lootItem = lootItem.when(conditionsBuilder);
