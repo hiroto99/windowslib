@@ -36,7 +36,7 @@ public class ConditionsBuilder {
                 }
                 ConditionsMemory.append(";").append(condition);
                 if (conditionsMemoryLength == 0) {
-                    ConditionsMemory.delete(ConditionsMemory.length(), ConditionsMemory.length());
+                    ConditionsMemory.delete(ConditionsMemory.length() - 1, ConditionsMemory.length() - 1);
                     if (ConditionsMemoryMethod == AutoDataGenEngine.ConditionsMemoryMethodEnum.INVERTED) {
                         ConditionBuilders.add(InvertedLootItemCondition.invert(new ConditionsBuilder().get(ConditionsMemory.toString(), provider).stream().findFirst().orElse(LootItemRandomChanceCondition.randomChance(1))));
                     }
