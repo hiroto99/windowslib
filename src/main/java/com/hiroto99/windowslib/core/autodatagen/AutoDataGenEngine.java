@@ -119,7 +119,9 @@ public class AutoDataGenEngine {
         for (int i = 5; i < decodeData.length; i++) {
             decodeConditions.append(decodeData[i]).append("/");
         }
-        decodeConditions.delete(decodeConditions.length() - 1, decodeConditions.length());
+        if (!decodeConditions.isEmpty()) {
+            decodeConditions.delete(decodeConditions.length() - 1, decodeConditions.length());
+        }
         return new LootTableData(item, Integer.parseInt(decodeData[1]), UniformGenerator.between(Float.parseFloat(decodeData[2]), Float.parseFloat(decodeData[3])), Float.parseFloat(decodeData[4]), decodeData.length > 5 ? decodeConditions.toString() : "");
     }
 
