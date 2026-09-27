@@ -34,7 +34,7 @@ public class ConditionsBuilder {
                 if (condition.contains("]")) {
                     conditionsMemoryLength -= getCountOfCloseBrackets(condition);
                 }
-                ConditionsMemory.append(condition);
+                ConditionsMemory.append(";").append(condition);
                 if (conditionsMemoryLength == 0) {
                     ConditionsMemory.delete(ConditionsMemory.length(), ConditionsMemory.length());
                     if (ConditionsMemoryMethod == AutoDataGenEngine.ConditionsMemoryMethodEnum.INVERTED) {
@@ -48,8 +48,6 @@ public class ConditionsBuilder {
                     }
                     ConditionsMemory.delete(0, ConditionsMemory.length());
                     ConditionsMemoryMethod = AutoDataGenEngine.ConditionsMemoryMethodEnum.NONE;
-                } else {
-                    ConditionsMemory.append(";");
                 }
             } else {
                 detectorConditionAndSendBracketDetector(condition, "inverted", AutoDataGenEngine.ConditionsMemoryMethodEnum.INVERTED);
