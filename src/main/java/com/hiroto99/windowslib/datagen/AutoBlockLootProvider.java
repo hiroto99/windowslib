@@ -107,9 +107,9 @@ public class AutoBlockLootProvider extends BlockLootSubProvider {
     }
 
     private LootTable.Builder getLootTable(AutoLootTable entryLootAnnotation) {
-        List<AutoDataGenEngine.LootTableData> lootTableData = new ArrayList<>();
         LootTable.Builder lootTable = LootTable.lootTable();
         for (LootTablePool lootPoolData : entryLootAnnotation.pool()) {
+            List<AutoDataGenEngine.LootTableData> lootTableData = new ArrayList<>();
             LootPool.Builder lootPool = LootPool.lootPool();
             for (String dropItemDataEntry : lootPoolData.dropItemData()) {
                 lootTableData.add(AutoDataGenEngine.dropItemDataDecode(dropItemDataEntry));
@@ -125,7 +125,7 @@ public class AutoBlockLootProvider extends BlockLootSubProvider {
                 }
                 lootPool = lootPool.add(lootItem);
             }
-            lootPool = lootPool.name(entryLootAnnotation.name())
+            lootPool = lootPool.name(lootPoolData.name())
                     .setRolls(UniformGenerator.between(lootPoolData.rollsMin(), lootPoolData.rollsMax()))
                     .setBonusRolls(ConstantValue.exactly(lootPoolData.bonusRolls()));
             for (LootItemCondition.Builder conditionsBuilder : new ConditionsBuilder().get(lootPoolData.condition(), registries)) {

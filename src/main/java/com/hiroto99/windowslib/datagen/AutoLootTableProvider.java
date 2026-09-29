@@ -36,9 +36,9 @@ public record AutoLootTableProvider(HolderLookup.Provider registries) implements
             if (entryLootAnnotation.type() != LootType.CHEST) {
                 continue;
             }
-            List<LootTableData> lootTableData = new ArrayList<>();
             LootTable.Builder lootTable = LootTable.lootTable();
             for (LootTablePool lootPoolData : entryLootAnnotation.pool()) {
+                List<LootTableData> lootTableData = new ArrayList<>();
                 LootPool.Builder lootPool = LootPool.lootPool();
                 for (String dropItemDataEntry : lootPoolData.dropItemData()) {
                     lootTableData.add(AutoDataGenEngine.dropItemDataDecode(dropItemDataEntry));
@@ -54,7 +54,7 @@ public record AutoLootTableProvider(HolderLookup.Provider registries) implements
                     }
                     lootPool = lootPool.add(lootItem);
                 }
-                lootPool = lootPool.name(entryLootAnnotation.name())
+                lootPool = lootPool.name(lootPoolData.name())
                         .setRolls(UniformGenerator.between(lootPoolData.rollsMin(), lootPoolData.rollsMax()))
                         .setBonusRolls(ConstantValue.exactly(lootPoolData.bonusRolls()));
                 for (LootItemCondition.Builder conditionsBuilder : new ConditionsBuilder().get(lootPoolData.condition(), registries)) {
