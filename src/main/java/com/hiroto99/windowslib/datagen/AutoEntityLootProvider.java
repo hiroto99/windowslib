@@ -92,6 +92,9 @@ public class AutoEntityLootProvider extends EntityLootSubProvider {
                 lootPool = lootPool.name(entryLootAnnotation.name())
                         .setRolls(UniformGenerator.between(lootPoolData.rollsMin(), lootPoolData.rollsMax()))
                         .setBonusRolls(ConstantValue.exactly(lootPoolData.bonusRolls()));
+                for (LootItemCondition.Builder conditionsBuilder : new ConditionsBuilder().get(lootPoolData.condition(), registries)) {
+                    lootPool = lootPool.when(conditionsBuilder);
+                }
                 lootTable = lootTable.withPool(lootPool);
             }
             this.add(entityType, lootTable);
