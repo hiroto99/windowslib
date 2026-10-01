@@ -75,19 +75,25 @@ public record ModifySpawnsBiomeModifier(HolderSet<Biome> biomes, WeightedList<Sp
 
     @Override
     public void modify(Holder<Biome> biome, Phase phase, ModifiableBiomeInfo.BiomeInfo.Builder builder) {
-        if (phase == Phase.ADD && this.biomes.contains(biome)) {
+        // スポーンデータの書き換え・上書き処理は Phase.MODIFY が推奨されます
+        if (phase == Phase.MODIFY && this.biomes.contains(biome)) {
             MobSpawnSettingsBuilder spawnBuilder = builder.getMobSpawnSettings();
-            WeightedList.Builder<SpawnerData> spawns = null;
-            for (MobCategory category : MobCategory.values()) {
-                spawns = spawnBuilder.getSpawner(category);
-            }
+
             for (Weighted<SpawnerData> spawner : this.spawners.unwrap()) {
-                EntityType<?> type = spawner.value().type();
-                if (spawns != null) {
-                    HolderSet<EntityType<?>> entityTypes = HolderSet.direct(Holder.direct(type));
-                    spawns.removeIf(spawnerData -> entityTypes.contains(BuiltInRegistries.ENTITY_TYPE.wrapAsHolder(spawnerData.value().type())));
+                SpawnerData data = spawner.value();
+                EntityType<?> type = data.type();
+                MobCategory category = type.getCategory();
+
+                // 該当するカテゴリの既存リストを取得
+                WeightedList.Builder<SpawnerData> categorySpawns = spawnBuilder.getSpawner(category);
+
+                if (categorySpawns != null) {
+                    // 同一エンティティタイプの既存スポーン設定を削除（上書きの準備）
+                    categorySpawns.removeIf(spawnerData -> spawnerData.value().type() == type);
                 }
-                spawnBuilder.addSpawn(type.getCategory(), spawner.weight(), spawner.value());
+
+                // 新しいスポーン設定（ウエイト、SpawnerData）を追加
+                spawnBuilder.addSpawn(category, spawner.weight(), data);
             }
         }
     }
