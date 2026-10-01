@@ -54,6 +54,7 @@ public class AutoDataGenEngine {
         Set<Field> fields = reflections.getFieldsAnnotatedWith(AutoTag.class);
 
         for (Field field : fields) {
+            field.setAccessible(true);
             try {
                 // static フィールドからオブジェクト（ItemやBlockのインスタンス）を取得
                 Object value = field.get(null);
@@ -80,6 +81,7 @@ public class AutoDataGenEngine {
         fields = reflections.getFieldsAnnotatedWith(AutoLootTable.class);
 
         for (Field field : fields) {
+            field.setAccessible(true);
             try {
                 // static フィールドからオブジェクト（ItemやBlockのインスタンス）を取得
                 Object value = field.get(null);
