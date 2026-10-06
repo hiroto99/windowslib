@@ -3,6 +3,7 @@ package com.hiroto99.windowslib.core.autodatagen;
 import com.hiroto99.windowslib.WindowsLib;
 import com.hiroto99.windowslib.core.autodatagen.annotation.AutoLootTable;
 import com.hiroto99.windowslib.core.autodatagen.annotation.AutoTag;
+import com.hiroto99.windowslib.core.autodatagen.annotation.AutoTagforCustomTag;
 import com.hiroto99.windowslib.util.ParseLanguageException;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -103,6 +104,22 @@ public class AutoDataGenEngine {
                 e.printStackTrace();
             }
         }
+
+        // @AutoLootTable が付与されたフィールドを全自動検出
+        fields = reflections.getFieldsAnnotatedWith(AutoTagforCustomTag.class);
+
+        for (Field field : fields) {
+            field.setAccessible(true);
+            try {
+                Object value = field.get(null);
+                AutoTagforCustomTag ann = field.getAnnotation(AutoTagforCustomTag.class);
+                if (value != null) {
+                    COLLECTED_DATA_CUSTOM_TAG.add(new DataEntryCustomTag(ann, value));
+                }
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public record LootTableData(Item item, int weight, UniformGenerator count, float fortuneMultiplier, String conditions) {}
@@ -133,4 +150,7 @@ public class AutoDataGenEngine {
         ALL_OF,
         ANY_OF
     }
+
+    public record DataEntryCustomTag(AutoTagforCustomTag annotation, Object value) {}
+    public static final List<DataEntryCustomTag> COLLECTED_DATA_CUSTOM_TAG = new ArrayList<>();
 }

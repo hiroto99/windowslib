@@ -2,6 +2,7 @@ package com.hiroto99.windowslib.datagen;
 
 import com.hiroto99.windowslib.WindowsLib;
 import com.hiroto99.windowslib.core.autodatagen.AutoDataGenEngine;
+import com.hiroto99.windowslib.core.autodatagen.AutoDataGenEngine.DataEntryCustomTag;
 import com.hiroto99.windowslib.core.autodatagen.AutoDataGenEngine.DataEntryTag;
 import com.hiroto99.windowslib.core.autodatagen.AutoDataGenEngine.DataEntryLoot;
 import net.minecraft.core.HolderLookup;
@@ -18,13 +19,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
-import static com.hiroto99.windowslib.core.autodatagen.AutoDataGenEngine.COLLECTED_DATA_LOOT;
-import static com.hiroto99.windowslib.core.autodatagen.AutoDataGenEngine.COLLECTED_DATA_TAG;
+import static com.hiroto99.windowslib.core.autodatagen.AutoDataGenEngine.*;
 
 public class AutoDataGenProvider {
     static List<String> ModIDs = new ArrayList<>();
     public static List<DataEntryTag> DATA_ENTRY_TAG = new ArrayList<>();
     public static List<DataEntryLoot> DATA_ENTRY_LOOT = new ArrayList<>();
+    public static List<DataEntryCustomTag> DATA_ENTRY_CUSTOM_TAG = new ArrayList<>();
 
     @SubscribeEvent
     public static void gatherData(GatherDataEvent.Client event) {
@@ -38,6 +39,7 @@ public class AutoDataGenProvider {
             AutoDataGenEngine.scanPackage(ModID);
             DATA_ENTRY_TAG.addAll(COLLECTED_DATA_TAG);
             DATA_ENTRY_LOOT.addAll(COLLECTED_DATA_LOOT);
+            DATA_ENTRY_CUSTOM_TAG.addAll(COLLECTED_DATA_CUSTOM_TAG);
         });
 
         DataGenerator generator = event.getGenerator();
@@ -60,6 +62,7 @@ public class AutoDataGenProvider {
                         LootContextParamSets.ENTITY
                 )), lookupProvider
         ));
+        generator.addProvider(true, new UniversalAutoTagForCustomTagProvider(packOutput, lookupProvider));
     }
 
     public static void register(String modPackagePath) {
