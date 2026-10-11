@@ -3,23 +3,21 @@ package com.hiroto99.windowslib;
 import com.hiroto99.windowslib.core.lifecycle.EntityLifecycleHooks;
 import net.minecraft.world.entity.Entity;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
 
+@EventBusSubscriber
 public class ModEvents {
     @SubscribeEvent
     private static void onEntityLoaded(EntityJoinLevelEvent event) {
-        if (event.getLevel().isClientSide()) {
-            Entity entity = event.getEntity();
-            EntityLifecycleHooks.onEntityLoaded(entity);
-        }
+        Entity entity = event.getEntity();
+        EntityLifecycleHooks.onEntityLoaded(entity);
     }
 
     @SubscribeEvent
-    private static void onEntityLoaded(EntityLeaveLevelEvent event) {
-        if (event.getLevel().isClientSide()) {
-            Entity entity = event.getEntity();
-            EntityLifecycleHooks.onEntityLoaded(entity);
-        }
+    private static void onEntityUnLoaded(EntityLeaveLevelEvent event) {
+        Entity entity = event.getEntity();
+        EntityLifecycleHooks.onEntityUnloaded(entity);
     }
 }
