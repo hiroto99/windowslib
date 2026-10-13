@@ -1,5 +1,6 @@
 package com.hiroto99.windowslib;
 
+import com.hiroto99.windowslib.core.simplepacket.PacketManager;
 import com.hiroto99.windowslib.datagen.AutoDataGenProvider;
 import com.hiroto99.windowslib.worldgen.ModBiomeModifiers;
 import org.slf4j.Logger;
@@ -45,8 +46,9 @@ public class WindowsLib {
         // Register the commonSetup method for modloading
         modEventBus.addListener(this::commonSetup);
 
-        // This is a `register` statement used to make the AutoDataGenEngine recognize it.
-        AutoDataGenProvider.register("com.hiroto99.windowslib");
+        // This is the `register` statement used to make WindowsLib recognize it.
+        // It is required in order to use the API's functionality.
+        WindowsLib.register("com.hiroto99.windowslib");
 
         ModBiomeModifiers.register(modEventBus);
 
@@ -81,5 +83,10 @@ public class WindowsLib {
     public void onServerStarting(ServerStartingEvent event) {
         // Do something when the server starts
         LOGGER.info("HELLO from server starting");
+    }
+
+    public static void register(String modPackagePath) {
+        AutoDataGenProvider.register(modPackagePath);
+        PacketManager.register(modPackagePath);
     }
 }
