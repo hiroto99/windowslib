@@ -39,7 +39,7 @@ public class UITabBar implements IUIComponent {
 
             // タブのタイトルやアイコンを描画
             TabItem tab = tabs.get(i);
-            graphics.text(font, tab.getTitle(), tabX + 4, tabY + 8, 0xFFFFFF, false);
+            graphics.text(font, tab.getTitle(), tabX + 4, tabY + 8, 0xFFFFFFFF, false);
         }
     }
 

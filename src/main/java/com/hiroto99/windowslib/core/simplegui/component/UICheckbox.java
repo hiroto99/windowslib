@@ -30,7 +30,7 @@ public class UICheckbox implements IUIComponent {
         }
         // ラベルの描画
         var font = net.minecraft.client.Minecraft.getInstance().font;
-        graphics.text(font, net.minecraft.network.chat.Component.literal(label), x + size + 4, y + 2, 0xFFFFFF, false);
+        graphics.text(font, net.minecraft.network.chat.Component.literal(label), x + size + 4, y + 2, 0xFFFFFFFF, false);
     }
 
     @Override

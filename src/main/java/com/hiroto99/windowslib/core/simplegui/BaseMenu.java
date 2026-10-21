@@ -16,6 +16,7 @@ import net.neoforged.neoforge.transfer.item.ResourceHandlerSlot;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
+import java.util.function.BiConsumer;
 
 public abstract class BaseMenu<T extends BlockEntity> extends AbstractContainerMenu {
     public final T blockEntity;
@@ -29,24 +30,73 @@ public abstract class BaseMenu<T extends BlockEntity> extends AbstractContainerM
     private static final int VANILLA_SLOT_COUNT = HOTBAR_SLOT_COUNT + PLAYER_INVENTORY_SLOT_COUNT;
 
     private int BLOCK_INVENTORY_SLOT_COUNT = 0;
+    private int containerSlotIndex = 0; // ハンドラー内のインデックス追跡用
     private final int ALL_INVENTORY_SLOT_INDEX;
 
     private final List<Integer> RESULT_INVENTORY_SLOT_LIST = new java.util.ArrayList<>();
 
-    public BaseMenu(@Nullable MenuType<?> menuType, int containerId, Inventory inventory, FriendlyByteBuf extraData) {
-        this(menuType, containerId, inventory, inventory.player.level().getBlockEntity(extraData.readBlockPos()), new ItemStacksResourceHandler(1));
+    // --- コンストラクタのバリエーション ---
+
+    // ① コマンド用（スロット数指定可能・デフォルト1）
+    public BaseMenu(@Nullable MenuType<?> menuType, int containerId, Inventory inventory) {
+        this(menuType, containerId, inventory, 1);
     }
 
-    public BaseMenu(@Nullable MenuType<?> menuType, int containerId, Inventory inventory, BlockEntity blockEntity, ItemStacksResourceHandler handler) {
+    public BaseMenu(@Nullable MenuType<?> menuType, int containerId, Inventory inventory, int containerSlotsSize) {
+        this(menuType, containerId, inventory, (BlockEntity) null, containerSlotsSize, true);
+    }
+
+    public BaseMenu(@Nullable MenuType<?> menuType, int containerId, Inventory inventory, int containerSlotsSize, boolean hasPlayerInventory) {
+        this(menuType, containerId, inventory, (BlockEntity) null, containerSlotsSize, hasPlayerInventory);
+    }
+
+    // ② FriendlyByteBuf用
+    public BaseMenu(@Nullable MenuType<?> menuType, int containerId, Inventory inventory, FriendlyByteBuf extraData, int containerSlotsSize) {
+        this(
+                menuType,
+                containerId,
+                inventory,
+                (extraData != null && extraData.isReadable()) ? inventory.player.level().getBlockEntity(extraData.readBlockPos()) : null,
+                containerSlotsSize,
+                true
+        );
+    }
+
+    public BaseMenu(@Nullable MenuType<?> menuType, int containerId, Inventory inventory, FriendlyByteBuf extraData, int containerSlotsSize, boolean hasPlayerInventory) {
+        this(
+                menuType,
+                containerId,
+                inventory,
+                (extraData != null && extraData.isReadable()) ? inventory.player.level().getBlockEntity(extraData.readBlockPos()) : null,
+                containerSlotsSize,
+                hasPlayerInventory
+        );
+    }
+
+    // ③ メインのコンストラクタ（サイズ指定でItemStacksResourceHandlerを自動生成）
+    public BaseMenu(@Nullable MenuType<?> menuType, int containerId, Inventory inventory, @Nullable BlockEntity blockEntity, int containerSlotsSize, boolean hasPlayerInventory) {
         super(menuType, containerId);
         this.blockEntity = (T) blockEntity;
         this.level = inventory.player.level();
-        this.block = level.getBlockState(blockEntity.getBlockPos()).getBlock();
+        ItemStacksResourceHandler handler = new ItemStacksResourceHandler(containerSlotsSize);
 
-        addPlayerInventory(inventory);
-        addPlayerHotbar(inventory);
+        if (blockEntity != null) {
+            this.block = level.getBlockState(blockEntity.getBlockPos()).getBlock();
+        } else {
+            this.block = null;
+        }
 
-        addContainers(handler);
+        // プレイヤーインベントリが必要な場合のみ追加する
+        if (hasPlayerInventory) {
+            addPlayerInventory(inventory);
+            addPlayerHotbar(inventory);
+        }
+
+        // 機械側（設定用など）のスロットがある場合のみ追加
+        if (containerSlotsSize > 0) {
+            addContainers(handler);
+        }
+
         ALL_INVENTORY_SLOT_INDEX = VANILLA_SLOT_COUNT + BLOCK_INVENTORY_SLOT_COUNT;
     }
 
@@ -59,17 +109,23 @@ public abstract class BaseMenu<T extends BlockEntity> extends AbstractContainerM
     }
 
     public Slot addNormalSlot(ItemStacksResourceHandler handler, int xPosition, int yPosition) {
-        return this.addSlot(new ResourceHandlerSlot(handler, handler::set, VANILLA_SLOT_COUNT + BLOCK_INVENTORY_SLOT_COUNT, xPosition, yPosition));
+        Slot slot = new ResourceHandlerSlot(handler, handler::set, containerSlotIndex, xPosition, yPosition);
+        containerSlotIndex++;
+        return this.addSlot(slot);
     }
 
     public Slot addResultSlot(ItemStacksResourceHandler handler, int xPosition, int yPosition) {
-        RESULT_INVENTORY_SLOT_LIST.add(VANILLA_SLOT_COUNT + BLOCK_INVENTORY_SLOT_COUNT);
-        return this.addSlot(new ResourceHandlerSlot(handler, handler::set, VANILLA_SLOT_COUNT + BLOCK_INVENTORY_SLOT_COUNT, xPosition, yPosition) {
+        int menuIndex = VANILLA_SLOT_COUNT + BLOCK_INVENTORY_SLOT_COUNT;
+        RESULT_INVENTORY_SLOT_LIST.add(menuIndex);
+
+        Slot slot = new ResourceHandlerSlot(handler, handler::set, containerSlotIndex, xPosition, yPosition) {
             @Override
             public boolean mayPlace(ItemStack stack) {
-                return false;
+                return false; // 出力スロットには手動で置けない
             }
-        });
+        };
+        containerSlotIndex++;
+        return this.addSlot(slot);
     }
 
     private void addPlayerInventory(Inventory inventory) {
@@ -99,7 +155,6 @@ public abstract class BaseMenu<T extends BlockEntity> extends AbstractContainerM
                 if (!this.moveItemStackTo(rawStack, 0, VANILLA_SLOT_COUNT, true)) {
                     return ItemStack.EMPTY;
                 }
-
                 quickMovedSlot.onQuickCraft(rawStack, quickMovedStack);
             }
             else if (quickMovedSlotIndex < VANILLA_SLOT_COUNT) {
@@ -123,7 +178,6 @@ public abstract class BaseMenu<T extends BlockEntity> extends AbstractContainerM
             } else {
                 quickMovedSlot.setChanged();
             }
-
             quickMovedSlot.onTake(player, rawStack);
         }
 
@@ -132,7 +186,9 @@ public abstract class BaseMenu<T extends BlockEntity> extends AbstractContainerM
 
     @Override
     public boolean stillValid(Player player) {
-        return stillValid(ContainerLevelAccess.create(level, blockEntity.getBlockPos()),
-                player, block);
+        if (blockEntity == null) {
+            return true;
+        }
+        return stillValid(ContainerLevelAccess.create(level, blockEntity.getBlockPos()), player, block);
     }
 }

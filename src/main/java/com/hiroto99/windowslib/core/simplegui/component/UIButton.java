@@ -33,7 +33,7 @@ public class UIButton implements IUIComponent {
         int textWidth = font.width(label);
         int textX = x + (width - textWidth) / 2;
         int textY = y + (height - 8) / 2;
-        graphics.text(font, label, textX, textY, 0xFFFFFF, false);
+        graphics.text(font, label, textX, textY, 0xFFFFFFFF, false);
     }
 
     @Override

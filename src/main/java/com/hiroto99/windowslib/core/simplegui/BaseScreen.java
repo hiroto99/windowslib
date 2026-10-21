@@ -29,6 +29,13 @@ public abstract class BaseScreen<T extends AbstractContainerMenu> extends Abstra
     }
 
     @Override
+    protected void init() {
+        super.init();
+        // 💡 ウィンドウリサイズ等で init() が再呼ばれした際、重複を防ぐためにクリアする！
+        this.components.clear();
+    }
+
+    @Override
     public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         super.extractBackground(graphics, mouseX, mouseY, partialTick);
 

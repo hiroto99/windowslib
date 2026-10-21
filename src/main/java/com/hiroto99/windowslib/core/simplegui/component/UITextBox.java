@@ -36,7 +36,7 @@ public class UITextBox implements IUIComponent {
         // 2. 入力されたテキストの描画
         var font = Minecraft.getInstance().font;
         graphics.text(font, Component.literal(text + (isFocused && (System.currentTimeMillis() / 500 % 2 == 0) ? "_" : "")),
-                x + 4, y + (height - 8) / 2, 0xFFFFFF, false);
+                x + 4, y + (height - 8) / 2, 0xFFFFFFFF, false);
     }
 
     @Override
@@ -51,9 +51,12 @@ public class UITextBox implements IUIComponent {
     // キーボードで文字が入力されたときにScreen側から呼び出すメソッド
     public boolean charTyped(CharacterEvent event) {
         if (isFocused) {
+            int codePoint = event.codepoint();
             // 入力可能な文字コードの簡易判定
-            if (event.codepoint() >= 32 && event.codepoint() < 127) {
-                text += event.codepoint();
+            if (codePoint >= 32 && codePoint < 127) {
+                // 💡 整数（コードポイント）を char にキャストして文字として結合する
+                text += (char) codePoint;
+                System.out.println(">>> Added char! Current text: " + text);
                 return true;
             }
         }
