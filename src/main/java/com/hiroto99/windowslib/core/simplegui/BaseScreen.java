@@ -1,7 +1,10 @@
 package com.hiroto99.windowslib.core.simplegui;
 
+import com.hiroto99.windowslib.core.simplegui.component.UITextBox;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
@@ -52,5 +55,26 @@ public abstract class BaseScreen<T extends AbstractContainerMenu> extends Abstra
             }
         }
         return super.mouseClicked(event, doubleClick);
+    }
+
+    // BaseScreen 内に追加するイベント中継メソッドの例
+    @Override
+    public boolean charTyped(CharacterEvent event) {
+        for (IUIComponent component : components) {
+            if (component instanceof UITextBox textBox && textBox.charTyped(event)) {
+                return true;
+            }
+        }
+        return super.charTyped(event);
+    }
+
+    @Override
+    public boolean keyPressed(KeyEvent event) {
+        for (IUIComponent component : components) {
+            if (component instanceof UITextBox textBox && textBox.keyPressed(event)) {
+                return true;
+            }
+        }
+        return super.keyPressed(event);
     }
 }
