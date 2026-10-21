@@ -66,10 +66,17 @@ public class UITextBox implements IUIComponent {
     // バックスペースなどで文字を消すときの処理
     public boolean keyPressed(KeyEvent event) {
         if (isFocused) {
-            if (event.key() == 259 /* Backspace */ && !text.isEmpty()) {
+            int keyCode = event.key();
+            if (keyCode == 259 /* Backspace */ && !text.isEmpty()) {
                 text = text.substring(0, text.length() - 1);
                 return true;
             }
+            // TabキーやEnterキー、Eキーなどでフォーカスを外したい場合の処理もここに書けます
+            if (keyCode == 256 /* Escape */ || keyCode == 257 /* Enter */) {
+                isFocused = false; // EnterやEscでフォーカスを解除
+                return true;
+            }
+            return true; // 💡 フォーカス中であれば、他のキー（Eキーなどを含む）が勝手に画面を閉じないようにここで true を返してブロックする
         }
         return false;
     }

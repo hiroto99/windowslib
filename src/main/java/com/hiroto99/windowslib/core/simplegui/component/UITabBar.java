@@ -11,8 +11,8 @@ import java.util.List;
 
 public class UITabBar implements IUIComponent {
     private int x, y;
-    private final int tabWidth = 28;  // タブ1つの幅
-    private final int tabHeight = 24; // タブ1つの高さ
+    private int tabWidth = 28;  // タブ1つの幅
+    private int tabHeight = 24; // タブ1つの高さ
     private final List<TabItem> tabs = new ArrayList<>();
     private int selectedIndex = 0;
 
@@ -21,7 +21,7 @@ public class UITabBar implements IUIComponent {
     }
 
     @Override public void setPosition(int x, int y) { this.x = x; this.y = y; }
-    @Override public void setSize(int width, int height) {}
+    @Override public void setSize(int width, int height) { this.tabWidth = width; this.tabHeight = height; }
 
     @Override
     public void render(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
