@@ -2,27 +2,33 @@ package com.hiroto99.windowslib.core.simplegui;
 
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 
-public abstract class BaseScreen<T extends AbstractContainerMenu> extends AbstractContainerScreen<T> {
+import java.util.ArrayList;
+import java.util.List;
 
-    // 画面ごとに異なる背景テクスチャを保持
+public abstract class BaseScreen<T extends AbstractContainerMenu> extends AbstractContainerScreen<T> {
     private final Identifier backgroundTexture;
+    protected final List<IUIComponent> components = new ArrayList<>();
 
     public BaseScreen(T menu, Inventory playerInventory, Component title, Identifier backgroundTexture) {
         super(menu, playerInventory, title);
         this.backgroundTexture = backgroundTexture;
     }
 
-    @Override
-    public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
-        super.extractBackground(graphics, mouseX, mouseY, a);
+    protected void addComponent(IUIComponent component) {
+        this.components.add(component);
+    }
 
-        // テクスチャが設定されている場合のみ自動で背景を描画
+    @Override
+    public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        super.extractBackground(graphics, mouseX, mouseY, partialTick);
+
         if (backgroundTexture != null) {
             int x = (width - imageWidth) / 2;
             int y = (height - imageHeight) / 2;
@@ -30,5 +36,21 @@ public abstract class BaseScreen<T extends AbstractContainerMenu> extends Abstra
             graphics.blit(RenderPipelines.GUI_TEXTURED, backgroundTexture, x, y, 0, 0,
                     imageWidth, imageHeight, 256, 256);
         }
+
+        // もし render() が無い環境で、背景抽出のタイミングで一緒にパーツを描画したい場合はここで回すこともできます
+        for (IUIComponent component : components) {
+            component.render(graphics, mouseX, mouseY, partialTick);
+        }
+    }
+
+    @Override
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        // 各カスタムパーツにクリックイベントを伝播
+        for (IUIComponent component : components) {
+            if (component.mouseClicked(event, doubleClick)) {
+                return true;
+            }
+        }
+        return super.mouseClicked(event, doubleClick);
     }
 }

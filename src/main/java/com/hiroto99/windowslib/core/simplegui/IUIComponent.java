@@ -1,6 +1,7 @@
 package com.hiroto99.windowslib.core.simplegui;
 
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.input.MouseButtonEvent;
 
 public interface IUIComponent {
     void setPosition(int x, int y);
@@ -10,5 +11,7 @@ public interface IUIComponent {
     void render(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick);
 
     // マウス入力やクリックのハンドリング（必要に応じて）
-    boolean mouseClicked(double mouseX, double mouseY, int button);
+    default boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        return false;
+    }
 }
