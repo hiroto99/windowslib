@@ -6,8 +6,8 @@ import net.minecraft.network.codec.StreamCodec;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import org.reflections.Reflections;
-import java.util.HashSet;
-import java.util.Set;
+
+import java.util.*;
 
 public class PacketManager {
 
@@ -24,8 +24,8 @@ public class PacketManager {
     /**
      * 登録されたすべてのパッケージを一括スキャンしてNeoForgeに登録する
      */
-    public static void registerAll(RegisterPayloadHandlersEvent event, String channelNamespace) {
-        PayloadRegistrar registrar = event.registrar(channelNamespace).versioned("1.0");
+    public static void registerAll(RegisterPayloadHandlersEvent event) {
+        PayloadRegistrar registrar = event.registrar("1.0");
 
         for (String packagePath : packagesToScan) {
             try {
