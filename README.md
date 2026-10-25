@@ -27,26 +27,24 @@ runs {
 }
 ```
 
+## 🚀 Quick Start - Registering the Provider
+
+Invoke the registration method within your data generation initialization logic by passing your mod's package path.
+
+```java
+// Register the entire data generation feature with just one line
+WindowsLib.register("com.example.yourmod");
+```
+
 ## 🌟 Key Feature: AutoDataGen
 
 AutoDataGen allows you to fully register and generate data using just a single line of code and a simple annotation.
 
-## 🚀 Quick Start
-
-### 1. Registering the Provider
-
-Invoke the registration method within your data generation initialization logic by passing your mod's package path.
-
-```
-// Register the entire data generation feature with just one line
-AutoDataGenProvider.register("com.example.yourmod");
-```
-
-### 2. Using the Annotation
+### Using the Annotation
 
 Simply attach the `@AutoTag` annotation to the registry objects (Items, Blocks, etc.) you want to generate tags for.
 
-```
+```java
 @AutoTag(name = "example_item", tags = {"minecraft:planks", "yourmod:custom_tag"})
 public static final RegistryObject<Item> EXAMPLE_ITEM = ...;
 ```
@@ -55,19 +53,31 @@ public static final RegistryObject<Item> EXAMPLE_ITEM = ...;
 
 SimplePacket simplifies network packet registration and handling between client and server using `@AutoPacket`. Boilerplate payload registration is handled automatically.
 
+### 🎯 TargetSide Options
+
+When annotating a packet record with `@AutoPacket(TargetSide)`, specify the intended receiving side:
+
+| TargetSide | Description |
+| ----- | ----- |
+| **`TargetSide.SERVER`** | Sent from client to be handled on the logical server side. |
+| **`TargetSide.CLIENT`** | Sent from server to be handled on the logical client side. |
+| **`TargetSide.BOTH`** | Registered on both sides for bidirectional packet handling. |
+
 ### Creating a Packet
 
 Implement `SimplePacket` and annotate the record with `@AutoPacket`:
 
-```
-@AutoPacket(TargetSide.SERVER)
-public record SwitchTabPacket(int tabID) implements SimplePacket {
-    public static final Type<SwitchTabPacket> TYPE = new Type<>(Identifier.fromNamespaceAndPath(WindowsLib.MODID, "switch_tab_packet"));
+```java
+@AutoPacket(TargetSide.SERVER) // Sending packets to the server
+public record ExamplePacket(String name, int age) implements SimplePacket {
+    public static final Type<ExamplePacket> TYPE = new Type<>(Identifier.fromNamespaceAndPath(ExampleMod.MODID, "example_packet"));
 
-    public static final StreamCodec<RegistryFriendlyByteBuf, SwitchTabPacket> STREAM_CODEC = StreamCodec.composite(
+    public static final StreamCodec<RegistryFriendlyByteBuf, ExamplePacket> STREAM_CODEC = StreamCodec.composite(
+            ByteBufCodecs.STRING_UTF8,
+            ExamplePacket::name,
             ByteBufCodecs.VAR_INT,
-            SwitchTabPacket::tabID,
-            SwitchTabPacket::new
+            ExamplePacket::age,
+            ExamplePacket::new
     );
 
     @Override
@@ -79,9 +89,7 @@ public record SwitchTabPacket(int tabID) implements SimplePacket {
     public void handle(IPayloadContext context) {
         context.enqueueWork(() -> {
             var player = context.player();
-            if (player.containerMenu instanceof BaseMenu menu) {
-                menu.setActiveTab(this.tabID);
-            }
+            // Write the processing to be performed on the target side
         });
     }
 }
@@ -91,9 +99,60 @@ public record SwitchTabPacket(int tabID) implements SimplePacket {
 
 Use standard NeoForge client distributor methods:
 
+```java
+// ON THE CLIENT
+
+// Send payload to server
+ClientPacketDistributor.sendToServer(new ExamplePacket(...));
+
+// ON THE SERVER
+
+// Send to one player (ServerPlayer serverPlayer)
+        PacketDistributor.sendToPlayer(serverPlayer, new ExamplePacket(...));
+
+/// Send to all players tracking this chunk (ServerLevel serverLevel, ChunkPos chunkPos)
+        PacketDistributor.sendToPlayersTrackingChunk(serverLevel, chunkPos, new ExamplePacket(...));
+
+/// Send to all connected players
+        PacketDistributor.sendToAllPlayers(new ExamplePacket(...));
 ```
-ClientPacketDistributor.sendToServer(new SwitchTabPacket(targetTabId));
+
+### 📦 Working with List Data (`CodecUtils`)
+
+When sending packets that contain collections like `List<V>`, you can use `CodecUtils.makeCodecList` to generate a `StreamCodec` for lists effortlessly, avoiding manual collection codec boilerplate.
+
+#### Example Usage in Packet
+```java
+@AutoPacket(TargetSide.SERVER)
+public record SyncItemListPacket(List<ItemStack> items) implements SimplePacket {
+  public static final Type<SyncItemListPacket> TYPE = new Type<>(Identifier.fromNamespaceAndPath(ExampleMod.MODID, "sync_item_list"));
+
+  public static final StreamCodec<RegistryFriendlyByteBuf, SyncItemListPacket> STREAM_CODEC = StreamCodec.composite(
+          // Use CodecUtils to create a List StreamCodec from single element codec
+          CodecUtils.makeCodecList(ItemStack.OPTIONAL_STREAM_CODEC),
+          SyncItemListPacket::items,
+          SyncItemListPacket::new
+  );
+
+  @Override
+  public Type<? extends CustomPacketPayload> type() {
+    return TYPE;
+  }
+
+  @Override
+  public void handle(IPayloadContext context) {
+    context.enqueueWork(() -> {
+      // Process the received List<ItemStack>
+    });
+  }
+}
 ```
+
+### 💡 Key Points Explanation
+1. **Batch Generation of List Codecs from Individual Element Codecs**:
+   By simply passing individual element codecs such as `ItemStack.OPTIONAL_STREAM_CODEC` or `ByteBufCodecs.VAR_INT` to `CodecUtils.makeCodecList(...)`, you can safely convert them into `StreamCodecs` for `List<V>`.
+2. **Upper Size Specification (`maxSize`)**:
+   By default, an upper limit of 256 elements is set to prevent buffer overflow attacks over the network and excessive memory consumption. If the number of elements increases, you can change the upper limit with `makeCodecList(codec, customMaxSize)`.
 
 ## 🖥️ SimpleGUI API
 
@@ -122,7 +181,7 @@ Below is a full example showing how to build a tabbed GUI screen with custom UI 
 
 #### 1. Menu Implementation (`BaseMenu`)
 
-```
+```java
 public class ExampleMenu extends BaseMenu<BlockEntity> {
 
     public ExampleMenu(int containerId, Inventory inventory, FriendlyByteBuf extraData) {
@@ -144,7 +203,7 @@ public class ExampleMenu extends BaseMenu<BlockEntity> {
 
 #### 2. Screen Implementation (`BaseScreen`)
 
-```
+```java
 public class ExampleScreen extends BaseScreen<ExampleMenu> {
 
     private static final Identifier ARROW_TEXTURE =
@@ -251,7 +310,7 @@ public class ExampleScreen extends BaseScreen<ExampleMenu> {
 
 Register the screen on the client event bus during client setup:
 
-```
+```java
 public void registerScreens(RegisterMenuScreensEvent event) {
     event.register(ModMenuTypes.EXAMPLE_MENU.get(), ExampleScreen::new);
 }
@@ -270,6 +329,7 @@ The `ref` package provides a typed, memory-safe mechanism for referencing entiti
 | Class | Type | Description | Key Usage |
 | ----- | ----- | ----- | ----- |
 | **`EntityRef<T>`** | Wrapper Class | Typed, lightweight reference to an `Entity` identified by `UUID`. Safe across unloads. | `new EntityRef<Cow>(entityUuid)` |
+| **`PlayerRef`** | Wrapper Class | Typed, lightweight reference to a Player identified by UUID. Not available for offline players. | `new PlayerRef(playerUuid)` |
 | **`EntityRefManager`** | Manager Utility | Backend resolver that fetches entity instances from `ServerLevel` using stored UUIDs. | `EntityRefManager.resolve(uuid, level)` |
 
 #### Example Usage
@@ -295,7 +355,7 @@ Includes a highly convenient Lookup utility that allows you to perform reverse-l
 
 Provides flexible, generic-safe type conversion utilities. For example, easily converting specific List implementations into Arrays while maintaining type safety:
 
-```
+```java
 public class ListToArray<T, U extends List<T>> {
     public T[] of(U list) {
         T[] array = (T[]) new Object[list.size()];
@@ -307,7 +367,7 @@ public class ListToArray<T, U extends List<T>> {
 }
 ```
 
-## 👥 For Players
+# 👥 For Players
 
 * Supported Environments:
 
@@ -323,6 +383,6 @@ public class ListToArray<T, U extends List<T>> {
 
   3. Run the game alongside the mods that require this API.
 
-## 📄 License
+# 📄 License
 
 This API is available under the MIT License. Feel free to bundle it in your modpacks or build your own mods on top of it.
