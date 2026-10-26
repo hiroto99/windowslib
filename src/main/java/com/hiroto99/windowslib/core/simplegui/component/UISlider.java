@@ -1,17 +1,23 @@
 package com.hiroto99.windowslib.core.simplegui.component;
 
 import com.hiroto99.windowslib.core.simplegui.IUIComponent;
+import com.hiroto99.windowslib.util.StringTranslator;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.MouseButtonEvent;
+
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 public class UISlider implements IUIComponent {
     private int x, y, width, height;
     private final String label;
     private double value; // 0.0 ～ 1.0
     private boolean isDragging = false;
-    private final java.util.function.Consumer<Double> onValueChanged;
+    private final Consumer<Double> onValueChanged;
+    private Supplier<StringTranslator> onHover; // ツールチップ用の処理
 
-    public UISlider(String label, double initialValue, java.util.function.Consumer<Double> onValueChanged) {
+    public UISlider(String label, double initialValue, Consumer<Double> onValueChanged) {
         this.label = label;
         this.value = Math.clamp(initialValue, 0.0, 1.0);
         this.onValueChanged = onValueChanged;
@@ -19,6 +25,7 @@ public class UISlider implements IUIComponent {
 
     @Override public void setPosition(int x, int y) { this.x = x; this.y = y; }
     @Override public void setSize(int width, int height) { this.width = width; this.height = height; }
+    public void setLabel(Supplier<StringTranslator> onHover) { this.onHover = onHover; }
 
     @Override
     public void render(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
@@ -45,5 +52,18 @@ public class UISlider implements IUIComponent {
     private void updateValue(double mouseX) {
         this.value = Math.clamp((mouseX - x) / (double) width, 0.0, 1.0);
         onValueChanged.accept(this.value);
+    }
+
+    @Override
+    public boolean tooltipRender(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
+        if (onHover == null) {
+            return false;
+        }
+        var font = Minecraft.getInstance().font;
+        if (mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height) {
+            guiGraphics.setComponentTooltipForNextFrame(font, onHover.get().toLiteralList(), mouseX, mouseY);
+            return true;
+        }
+        return false;
     }
 }

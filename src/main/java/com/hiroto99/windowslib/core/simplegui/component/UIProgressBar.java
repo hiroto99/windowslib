@@ -1,6 +1,8 @@
 package com.hiroto99.windowslib.core.simplegui.component;
 
 import com.hiroto99.windowslib.core.simplegui.IUIComponent;
+import com.hiroto99.windowslib.util.StringTranslator;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
@@ -15,6 +17,7 @@ public class UIProgressBar implements IUIComponent {
     private final Supplier<Integer> progressSupplier; // 現在の進捗ピクセル数やスケールを返す
     private final BooleanSupplier isCrafting;        // 稼働中かどうか
     private final Direction direction;
+    private Supplier<StringTranslator> onHover; // ツールチップ用の処理
 
     public enum Direction {
         HORIZONTAL_GROW, // 横に伸びる（矢印など）
@@ -33,6 +36,7 @@ public class UIProgressBar implements IUIComponent {
 
     @Override public void setPosition(int x, int y) { this.x = x; this.y = y; }
     @Override public void setSize(int width, int height) {}
+    public void setLabel(Supplier<StringTranslator> onHover) { this.onHover = onHover; }
 
     @Override
     public void render(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
@@ -57,5 +61,18 @@ public class UIProgressBar implements IUIComponent {
                     textureWidth, renderHeight,
                     textureWidth, textureHeight);
         }
+    }
+
+    @Override
+    public boolean tooltipRender(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
+        if (onHover == null) {
+            return false;
+        }
+        var font = Minecraft.getInstance().font;
+        if (mouseX >= x && mouseX <= x + textureWidth && mouseY >= y && mouseY <= y + textureHeight) {
+            guiGraphics.setComponentTooltipForNextFrame(font, onHover.get().toLiteralList(), mouseX, mouseY);
+            return true;
+        }
+        return false;
     }
 }

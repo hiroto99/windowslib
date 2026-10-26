@@ -114,7 +114,6 @@ public abstract class BaseScreen<T extends AbstractContainerMenu> extends Abstra
         super.extractBackground(graphics, mouseX, mouseY, partialTick);
 
         if (backgroundTexture != null) {
-            // 💡 演算子抜けを修正済み
             int x = (width - imageWidth) / 2;
             int y = (height - imageHeight) / 2;
 
@@ -125,6 +124,16 @@ public abstract class BaseScreen<T extends AbstractContainerMenu> extends Abstra
         // アクティブなパーツを描画
         for (IUIComponent component : activeComponents) {
             component.render(graphics, mouseX, mouseY, partialTick);
+        }
+    }
+
+    @Override
+    protected void extractLabels(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+        super.extractLabels(graphics, mouseX, mouseY);
+
+        // アクティブなパーツにツールチップ判定
+        for (IUIComponent component : activeComponents) {
+            component.tooltipRender(graphics, mouseX, mouseY);
         }
     }
 

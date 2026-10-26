@@ -1,17 +1,23 @@
 package com.hiroto99.windowslib.core.simplegui.component;
 
 import com.hiroto99.windowslib.core.simplegui.IUIComponent;
+import com.hiroto99.windowslib.util.StringTranslator;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.MouseButtonEvent;
+
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 public class UICheckbox implements IUIComponent {
     private int x, y;
     private final int size = 12;
     private final String label;
     private boolean checked;
-    private final java.util.function.Consumer<Boolean> onToggled;
+    private final Consumer<Boolean> onToggled;
+    private Supplier<StringTranslator> onHover; // ツールチップ用の処理
 
-    public UICheckbox(String label, boolean initialChecked, java.util.function.Consumer<Boolean> onToggled) {
+    public UICheckbox(String label, boolean initialChecked, Consumer<Boolean> onToggled) {
         this.label = label;
         this.checked = initialChecked;
         this.onToggled = onToggled;
@@ -19,6 +25,7 @@ public class UICheckbox implements IUIComponent {
 
     @Override public void setPosition(int x, int y) { this.x = x; this.y = y; }
     @Override public void setSize(int width, int height) {}
+    public void setLabel(Supplier<StringTranslator> onHover) { this.onHover = onHover; }
 
     @Override
     public void render(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
@@ -41,6 +48,19 @@ public class UICheckbox implements IUIComponent {
         if (mx >= x && mx <= x + size + 50 && my >= y && my <= y + size) {
             checked = !checked;
             onToggled.accept(checked);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean tooltipRender(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
+        if (onHover == null) {
+            return false;
+        }
+        if (mouseX >= x && mouseX <= x + size + 50 && mouseY >= y && mouseY <= y + size) {
+            var font = Minecraft.getInstance().font;
+            guiGraphics.setComponentTooltipForNextFrame(font, onHover.get().toLiteralList(), mouseX, mouseY);
             return true;
         }
         return false;

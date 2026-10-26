@@ -1,10 +1,13 @@
 package com.hiroto99.windowslib.core.simplegui.component;
 
 import com.hiroto99.windowslib.core.simplegui.IUIComponent;
+import com.hiroto99.windowslib.util.StringTranslator;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
+
+import java.util.function.Supplier;
 
 public class UITextButton implements IUIComponent {
     private int x, y;
@@ -12,6 +15,7 @@ public class UITextButton implements IUIComponent {
     private final int normalColor;
     private final int hoverColor;
     private final Runnable onPress;
+    private Supplier<StringTranslator> onHover; // ツールチップ用の処理
 
     // 通常時の色と、マウスホバー時の色を指定できるようにする
     public UITextButton(Component text, int normalColor, int hoverColor, Runnable onPress) {
@@ -23,6 +27,7 @@ public class UITextButton implements IUIComponent {
 
     @Override public void setPosition(int x, int y) { this.x = x; this.y = y; }
     @Override public void setSize(int width, int height) {} // サイズはフォント幅から自動計算
+    public void setLabel(Supplier<StringTranslator> onHover) { this.onHover = onHover; }
 
     @Override
     public void render(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
@@ -50,6 +55,21 @@ public class UITextButton implements IUIComponent {
         // クリック位置がテキストの範囲内ならアクションを実行
         if (mouseX >= x && mouseY >= y && mouseX < x + width && mouseY < y + height) {
             onPress.run();
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean tooltipRender(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
+        if (onHover == null) {
+            return false;
+        }
+        var font = Minecraft.getInstance().font;
+        var textX = font.width(text);
+        var textY = 8;
+        if (mouseX >= x && mouseX <= x + textX && mouseY >= y && mouseY <= y + textY) {
+            guiGraphics.setComponentTooltipForNextFrame(font, onHover.get().toLiteralList(), mouseX, mouseY);
             return true;
         }
         return false;

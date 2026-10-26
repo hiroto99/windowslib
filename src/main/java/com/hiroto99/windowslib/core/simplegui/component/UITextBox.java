@@ -1,6 +1,7 @@
 package com.hiroto99.windowslib.core.simplegui.component;
 
 import com.hiroto99.windowslib.core.simplegui.IUIComponent;
+import com.hiroto99.windowslib.util.StringTranslator;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.CharacterEvent;
@@ -8,10 +9,13 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
+import java.util.function.Supplier;
+
 public class UITextBox implements IUIComponent {
     private int x, y, width, height;
     private String text = "";
     private boolean isFocused = false;
+    private Supplier<StringTranslator> onHover; // ツールチップ用の処理
 
     public UITextBox(String initialText) {
         this.text = initialText != null ? initialText : "";
@@ -21,6 +25,7 @@ public class UITextBox implements IUIComponent {
 
     @Override public void setPosition(int x, int y) { this.x = x; this.y = y; }
     @Override public void setSize(int width, int height) { this.width = width; this.height = height; }
+    public void setLabel(Supplier<StringTranslator> onHover) { this.onHover = onHover; }
 
     @Override
     public void render(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
@@ -46,6 +51,19 @@ public class UITextBox implements IUIComponent {
         // ボックス内がクリックされたか判定
         isFocused = (mx >= x && mx <= x + width && my >= y && my <= y + height);
         return isFocused;
+    }
+
+    @Override
+    public boolean tooltipRender(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
+        if (onHover == null) {
+            return false;
+        }
+        var font = Minecraft.getInstance().font;
+        if (mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height) {
+            guiGraphics.setComponentTooltipForNextFrame(font, onHover.get().toLiteralList(), mouseX, mouseY);
+            return true;
+        }
+        return false;
     }
 
     // キーボードで文字が入力されたときにScreen側から呼び出すメソッド

@@ -9,5 +9,7 @@
   "windowslib.configuration.items": "Item List",
   "windowslib.configuration.logDirtBlock": "Log Dirt Block",
   "windowslib.configuration.magicNumberIntroduction": "Magic Number Text",
-  "windowslib.configuration.magicNumber": "Magic Number"
+  "windowslib.configuration.magicNumber": "Magic Number",
+
+  "windowslib.ui.experimental.dropdown_1": "Running on Normal"
 }

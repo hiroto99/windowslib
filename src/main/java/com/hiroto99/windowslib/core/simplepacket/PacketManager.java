@@ -54,10 +54,10 @@ public class PacketManager {
             var type = (CustomPacketPayload.Type<T>) typeField.get(null);
             var codec = (StreamCodec<FriendlyByteBuf, T>) codecField.get(null);
 
-            if (annotation.value() != TargetSide.SERVER) {
+            if (annotation.value() != TargetSide.CLIENT) {
                 registrar.playToServer(type, codec, (packet, context) -> packet.handle(context));
             }
-            if (annotation.value() != TargetSide.CLIENT) {
+            if (annotation.value() != TargetSide.SERVER) {
                 registrar.playToClient(type, codec, (packet, context) -> packet.handle(context));
             }
         } catch (Exception e) {

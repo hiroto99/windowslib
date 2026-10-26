@@ -2,7 +2,12 @@ package com.hiroto99.windowslib;
 
 import com.hiroto99.windowslib.core.simplepacket.PacketManager;
 import com.hiroto99.windowslib.datagen.AutoDataGenProvider;
+import com.hiroto99.windowslib.test.TestGuiCommand;
+import com.hiroto99.windowslib.test.ExperimentalTestScreen;
+import com.hiroto99.windowslib.test.ModMenuTypes;
 import com.hiroto99.windowslib.worldgen.ModBiomeModifiers;
+import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -29,9 +34,6 @@ public class WindowsLib {
     // The constructor for the mod class is the first code that is run when your mod is loaded.
     // FML will recognize some parameter types like IEventBus or ModContainer and pass them in automatically.
     public WindowsLib(IEventBus modEventBus, ModContainer modContainer) {
-        // Register the commonSetup method for modloading
-        modEventBus.addListener(this::commonSetup);
-
         // This is the `register` statement used to make WindowsLib recognize it.
         // It is required in order to use the API's functionality.
         WindowsLib.register("com.hiroto99.windowslib");
@@ -45,24 +47,12 @@ public class WindowsLib {
 
         modEventBus.addListener(AutoDataGenProvider::gatherData);
 
-        // Register our mod's ModConfigSpec so that FML can create and load the config file for us
-        modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
-
         NeoForge.EVENT_BUS.register(ModEvents.class);
         modEventBus.addListener(ModEvents::onRegisterPayloads);
-    }
 
-    private void commonSetup(FMLCommonSetupEvent event) {
-        // Some common setup code
-        LOGGER.info("HELLO FROM COMMON SETUP");
-
-        if (Config.LOG_DIRT_BLOCK.getAsBoolean()) {
-            LOGGER.info("DIRT BLOCK >> {}", BuiltInRegistries.BLOCK.getKey(Blocks.DIRT));
-        }
-
-        LOGGER.info("{}{}", Config.MAGIC_NUMBER_INTRODUCTION.get(), Config.MAGIC_NUMBER.getAsInt());
-
-        Config.ITEM_STRINGS.get().forEach((item) -> LOGGER.info("ITEM >> {}", item));
+        ModMenuTypes.register(modEventBus);
+        modEventBus.addListener(this::registerScreens);
+        NeoForge.EVENT_BUS.addListener(this::onRegisterCommands);
     }
 
     // You can use SubscribeEvent and let the Event Bus discover methods to call
@@ -70,6 +60,15 @@ public class WindowsLib {
     public void onServerStarting(ServerStartingEvent event) {
         // Do something when the server starts
         LOGGER.info("HELLO from server starting");
+    }
+
+    public void registerScreens(RegisterMenuScreensEvent event) {
+        event.register(ModMenuTypes.EXPERIMENTAL_MENU.get(), ExperimentalTestScreen::new);
+    }
+
+    public void onRegisterCommands(RegisterCommandsEvent event) {
+        // ここでコマンドDispatcherにコマンドを登録する
+        TestGuiCommand.register(event.getDispatcher());
     }
 
     public static void register(String modPackagePath) {

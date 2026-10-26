@@ -14,4 +14,8 @@ public interface IUIComponent {
     default boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         return false;
     }
+
+    default boolean tooltipRender(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
+        return false;
+    }
 }
