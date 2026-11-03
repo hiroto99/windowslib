@@ -15,12 +15,12 @@ import java.util.function.Supplier;
 public class UITankBar implements IUIComponent {
     private int x, y, width, height;
     private final float capacity;
-    private final Supplier<FluidStack> fluidSupplier; // 液体処理の関数
+    private final FluidStack fluid; // この変数の中に液体がある
     private Supplier<StringTranslator> onHover; // ツールチップ用の処理
 
-    public UITankBar(float capacity, Supplier<FluidStack> fluidSupplier) {
+    public UITankBar(float capacity, FluidStack fluid) {
         this.capacity = capacity;
-        this.fluidSupplier = fluidSupplier;
+        this.fluid = fluid;
     }
 
     @Override public void setPosition(int x, int y) { this.x = x; this.y = y; }
@@ -34,19 +34,23 @@ public class UITankBar implements IUIComponent {
 
         // 2. 液体部分（下から上に向かって溜まるように計算）
         float ratio = Math.clamp(getFillRatio(), 0.0f, 1.0f);
-        int filledHeight = (int) (height * ratio);
-        int renderY = y + height - filledHeight; // 下から描画するためYを調整
+        int filledHeight = (int) ((height - 2) * ratio);
+        int renderY = y + height - filledHeight - 1; // 下から描画するためYを調整
 
         // 例: 水色（液体っぽく）で描画
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, getFluidTexture(fluidSupplier.get()), x, renderY, width, filledHeight, getColorTint(fluidSupplier.get()));
+        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, getFluidTexture(fluid), x + 1, renderY, width - 2, filledHeight, getColorTint(fluid));
     }
 
     public float getFillRatio() {
-        return fluidSupplier.get().amount() / capacity;
+        long amount = fluid.amount();
+        if (capacity <= 0) {
+            return 0.0f;
+        }
+        return (float) amount / capacity;
     }
 
     public FluidStack getFluid() {
-        return fluidSupplier.get();
+        return fluid;
     }
 
     public float getCapacity() {

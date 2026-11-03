@@ -10,11 +10,11 @@ import java.util.function.Supplier;
 
 public class UIEnergyBar implements IUIComponent {
     private int x, y, width, height;
-    private final Supplier<EnergyHandler> energySupplier; // 液体処理の関数
+    private final EnergyHandler energy; // エネルギー処理の関数
     private Supplier<StringTranslator> onHover; // ツールチップ用の処理
 
-    public UIEnergyBar(Supplier<EnergyHandler> fluidSupplier) {
-        this.energySupplier = fluidSupplier;
+    public UIEnergyBar(EnergyHandler energy) {
+        this.energy = energy;
     }
 
     @Override public void setPosition(int x, int y) { this.x = x; this.y = y; }
@@ -23,19 +23,28 @@ public class UIEnergyBar implements IUIComponent {
 
     @Override
     public void render(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        int stored = (int)(height * getFillRatio());
+        // 1. タンクの背景（空の部分の枠や色）
+        graphics.fill(x, y, x + width, y + height, 0xFF333333);
 
-        // 例: 水色（液体っぽく）で描画
-        graphics.fillGradient(x, y + (height - stored), x + width,
-                y + height, 0xffb51500, 0xff600b00);
+        float ratio = Math.clamp(getFillRatio(), 0.0f, 1.0f);
+        int stored = (int) ((height - 2) * ratio);
+
+        // 例: 黄色とオレンジ色で描画
+        graphics.fillGradient(x + 1, y - 1 + (height - stored), x + width - 1,
+                y + height - 1, 0xffb515FF, 0xff600bFF);
     }
 
-    public int getFillRatio() {
-        return energySupplier.get().getAmountAsInt() / energySupplier.get().getCapacityAsInt();
+    public float getFillRatio() {
+        float amount = energy.getAmountAsInt();
+        float capacity = energy.getCapacityAsInt();
+        if (capacity <= 0) {
+            return 0.0f;
+        }
+        return amount / capacity;
     }
 
     public EnergyHandler getEnergy() {
-        return energySupplier.get();
+        return energy;
     }
 
     @Override
