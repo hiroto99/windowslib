@@ -189,3 +189,7 @@ idea {
         downloadJavadoc = true
     }
 }
+
+jar {
+    exclude '**/test/**'
+}
