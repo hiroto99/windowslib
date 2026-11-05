@@ -1,10 +1,10 @@
 package com.hiroto99.windowslib;
 
+import com.hiroto99.windowslib.core.simplecommand.CommandManager;
 import com.hiroto99.windowslib.core.simplepacket.PacketManager;
 import com.hiroto99.windowslib.datagen.AutoDataGenProvider;
 import com.hiroto99.windowslib.worldgen.ModBiomeModifiers;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
-import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -41,6 +41,7 @@ public class WindowsLib {
         modEventBus.addListener(AutoDataGenProvider::gatherData);
 
         NeoForge.EVENT_BUS.register(ModEvents.class);
+        NeoForge.EVENT_BUS.addListener(ModEvents::onRegisterCommands);
         modEventBus.addListener(ModEvents::onRegisterPayloads);
     }
 
@@ -54,5 +55,6 @@ public class WindowsLib {
     public static void register(String modPackagePath) {
         AutoDataGenProvider.register(modPackagePath);
         PacketManager.register(modPackagePath);
+        CommandManager.register(modPackagePath);
     }
 }
