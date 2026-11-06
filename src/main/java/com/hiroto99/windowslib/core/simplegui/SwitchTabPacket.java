@@ -15,12 +15,6 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 public record SwitchTabPacket(int tabID) implements SimplePacket {
     public static final Type<SwitchTabPacket> TYPE = new Type<>(Identifier.fromNamespaceAndPath(WindowsLib.MODID, "switch_tab_packet"));
 
-    public static final StreamCodec<RegistryFriendlyByteBuf, SwitchTabPacket> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.VAR_INT,
-            SwitchTabPacket::tabID,
-            SwitchTabPacket::new
-    );
-
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
