@@ -1,27 +1,49 @@
 package com.hiroto99.windowslib.core.simplepacket;
 
+import com.mojang.authlib.GameProfile;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.dimension.DimensionType;
+import net.minecraft.world.level.material.Fluid;
+import net.neoforged.neoforge.fluids.crafting.FluidIngredient;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
+import net.neoforged.neoforge.transfer.energy.EnergyHandler;
+import net.neoforged.neoforge.transfer.energy.SimpleEnergyHandler;
+import org.joml.Quaternionfc;
+import org.joml.Vector3f;
+import org.joml.Vector3fc;
 import org.reflections.Reflections;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.lang.reflect.RecordComponent;
+import java.lang.reflect.*;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.IntFunction;
+import java.util.function.ToIntFunction;
 
 public class PacketManager {
-
     // ユーザーが提示してくれた登録用メソッドで使われるセット
     private static final Set<String> packagesToScan = new HashSet<>();
+
+    // ResolveCodecForClassで使うマップを作成
+    private static final Map<Class<?>, StreamCodec<? extends ByteBuf, ?>> StreamCodecKey = new HashMap<>();
 
     /**
      * スキャン対象のパッケージパスを動的に追加する
@@ -109,7 +131,7 @@ public class PacketManager {
                 paramTypes[compositeArgs.size() / 2] = component.getType();
 
                 // コーデックの自動解決
-                StreamCodec<ByteBuf, ?> fieldCodec = resolveCodec(component);
+                StreamCodec<? extends ByteBuf, ?> fieldCodec = resolveCodec(component);
                 compositeArgs.add(fieldCodec);
 
                 // 🌟 仮想ゲッターをその場で生成して追加 (型エラーを回避するため Function.class で受ける)
@@ -210,17 +232,178 @@ public class PacketManager {
     /**
      * フィールドの型やアノテーションから最適なコーデックを自動解決
      */
-    private static StreamCodec<ByteBuf, ?> resolveCodec(RecordComponent component) throws Exception {
+    private static StreamCodec<? extends ByteBuf, ?> resolveCodec(RecordComponent component) {
         Class<?> type = component.getType();
-        if (type == BlockPos.class) {
-            return BlockPos.STREAM_CODEC;
+
+        // 1. フィールドの型が java.util.Listかどうかを判定
+        if (type == List.class) {
+            // 2. ジェネリクス情報（例: List<BlockPos> の <BlockPos> 部分）を取得する
+            Type genericType = component.getGenericType();
+
+            if (genericType instanceof ParameterizedType parameterizedType) {
+                // 実際の型引数（<> の中身）を配列で取得（Listは引数が1つなので [0] を見る）
+                Type[] typeArguments = parameterizedType.getActualTypeArguments();
+
+                if (typeArguments.length > 0 && typeArguments[0] instanceof Class<?> innerClass) {
+                    // 3. 中身の型の単体コーデックを再帰的に解決する
+                    // 例: innerClass が BlockPos.class なら、BlockPos.STREAM_CODEC が返る
+                    StreamCodec<? extends ByteBuf, ?> innerCodec = resolveCodecForClass(innerClass);
+
+                    // 4. 💡 API側の「SmartCodec.makeCodecList」に流し込んで、List用のコーデックに変換する
+                    // 引数に単体コーデックを渡すと、自動的に List<T> 対応のコーデックになります
+                    return SmartCodec.makeCodecList(innerCodec);
+                }
+            }
         }
-        if (type == int.class || type == Integer.class) {
-            return SmartCodec.SMART_INT;
+
+        // 1. そのフィールドが配列（Array）かどうかをチェック
+        if (type.isArray()) {
+            // 2. 配列の中身の型（要素の型）を取得
+            Class<?> elementType = type.getComponentType();
+
+            // 3. 中身の型に応じて、適切な配列用のコーデックを生成して返す
+            if (elementType == byte.class) {
+                return ByteBufCodecs.BYTE_ARRAY;
+            } else if (elementType == long.class) {
+                return ByteBufCodecs.LONG_ARRAY;
+            } else {
+                // 4. 再帰呼び出しで、中身単体のコーデックを解決（例: BlockPos.STREAM_CODEC）
+                StreamCodec<? extends ByteBuf, ?> elementCodec = resolveCodecForClass(elementType);
+
+                // 5. 💡 API側の「SmartCodec.makeCodecList」に流し込んで、List用のコーデックに変換する
+                // 引数に単体コーデックを渡すと、自動的に List<T> 対応のコーデックになります
+                StreamCodec<? extends ByteBuf, ?> listCodec = SmartCodec.makeCodecList(elementCodec);
+
+                // 🌟 最後の出口で xmap を使い、List から配列へ、配列から List へと相互変換をかける
+                // 生の型 (StreamCodec) を経由させて型変換エラーを強引に黙らせます
+                StreamCodec rawListCodec = (StreamCodec) listCodec;
+
+                // 6. 【修正点】xmap ではなく map メソッドを呼び出す
+                StreamCodec rawArrayCodec = rawListCodec.map(
+                        (Object obj) -> {
+                            // デコード時 (読み込み): List<Object> -> Object[]（配列）
+                            List<Object> list = (List<Object>) obj;
+                            Object[] array = (Object[]) Array.newInstance(elementType, list.size());
+                            return list.toArray(array);
+                        },
+                        (Object arrayObj) -> {
+                            // エンコード時 (書き込み): 配列（Object[]） -> List<Object>
+                            return List.of((Object[]) arrayObj);
+                        }
+                );
+            }
         }
-        if (type == String.class) {
-            return ByteBufCodecs.STRING_UTF8;
+
+        // 1. フィールドの型が java.util.Mapかどうかを判定
+        if (Map.class.isAssignableFrom(type)) {
+            // 2. ジェネリクス情報（例: Map<String, BlockPos> の <String, BlockPos> 部分）を取得する
+            Type genericType = component.getGenericType();
+
+            if (genericType instanceof ParameterizedType parameterizedType) {
+                // 実際の型引数（<> の中身）を配列で取得（Optionalは引数が1つなので [0] を見る）
+                Type[] typeArguments = parameterizedType.getActualTypeArguments();
+
+                // Mapは必ずキーと値の2つの型パラメーターを持ちます (<K, V>)
+                if (typeArguments.length == 2 && typeArguments[0] instanceof Class<?> keyClass && typeArguments[1] instanceof Class<?> valueClass) {
+                    // 3. キーと値の単体コーデックをそれぞれ再帰的に解決
+                    StreamCodec<? extends ByteBuf, ?> keyCodec = resolveCodecForClass(keyClass);
+                    StreamCodec<? extends ByteBuf, ?> valueCodec = resolveCodecForClass(valueClass);
+
+                    // 4. 💡 Minecraftバニラの「ByteBufCodecs.map」に流し込んで Map 用コーデックに変換
+                    // シグネチャ: map(IntFunction, StreamCodec, StreamCodec)
+                    // ※第1引数には、読み込み時にどのMap実装を使うか（例: HashMap::new）を指定するヘルパーが必要です。
+                    // バニラの標準オーバーロードに合わせたリフレクション呼び出しを行います。
+                    return SmartCodec.makeMapCodec(keyCodec, valueCodec);
+                }
+            }
         }
-        throw new UnsupportedOperationException("未対応の型です: " + type.getName());
+
+        // 1. フィールドの型が java.util.Optional かどうかを判定
+        if (type == Optional.class) {
+            // 2. ジェネリクス情報（例: Optional<BlockPos> の <BlockPos> 部分）を取得する
+            Type genericType = component.getGenericType();
+
+            if (genericType instanceof ParameterizedType parameterizedType) {
+                // 実際の型引数（<> の中身）を配列で取得（Optionalは引数が1つなので [0] を見る）
+                Type[] typeArguments = parameterizedType.getActualTypeArguments();
+
+                if (typeArguments.length > 0 && typeArguments[0] instanceof Class<?> innerClass) {
+                    // 3. 中身の型の単体コーデックを再帰的に解決する
+                    // 例: innerClass が BlockPos.class なら、BlockPos.STREAM_CODEC が返る
+                    StreamCodec<? extends ByteBuf, ?> innerCodec = resolveCodecForClass(innerClass);
+
+                    // 4. 💡 Minecraftバニラの「ByteBufCodecs.optional」に流し込んで、Optional用のコーデックに変換する
+                    // 引数に単体コーデックを渡すと、自動的に Optional<T> 対応のコーデックになります
+                    return ByteBufCodecs.optional(innerCodec);
+                }
+            }
+            throw new UnsupportedOperationException("Optional のジェネリクス型を特定できませんでした。");
+        }
+
+        return resolveCodecForClass(type);
+    }
+
+    private static StreamCodec<? extends ByteBuf, ?> resolveCodecForClass(Class<?> type) {
+        if (StreamCodecKey.containsKey(type)) {
+            return StreamCodecKey.get(type);
+        } else {
+            if (type.isEnum()) {
+                // Enumの ordinal (インデックス) を使って自動シリアライズするコーデックを動的生成
+                // 引数型: (IntFunction<E>, ToIntFunction<E>)
+                IntFunction<Object> fromId = id -> type.getEnumConstants()[id];
+                ToIntFunction<Object> toId = obj -> ((Enum<?>) obj).ordinal();
+
+                return ByteBufCodecs.idMapper(fromId, toId);
+            }
+            throw new UnsupportedOperationException("未対応の型です: " + type.getName());
+        }
+    }
+
+    public static void createStreamCodecKey() {
+        // プリミティブ型（および対応するラッパー型）の登録
+        addKey(boolean.class, ByteBufCodecs.BOOL);
+        addKey(Boolean.class, ByteBufCodecs.BOOL);
+        addKey(byte.class, ByteBufCodecs.BYTE);
+        addKey(Byte.class, ByteBufCodecs.BYTE);
+        addKey(short.class, ByteBufCodecs.SHORT);
+        addKey(Short.class, ByteBufCodecs.SHORT);
+
+        // スマートコーデック（独自実装）
+        addKey(int.class, SmartCodec.SMART_INT);
+        addKey(Integer.class, SmartCodec.SMART_INT);
+        addKey(long.class, SmartCodec.SMART_LONG);
+        addKey(Long.class, SmartCodec.SMART_LONG);
+
+        // 小数の型
+        addKey(float.class, ByteBufCodecs.FLOAT);
+        addKey(Float.class, ByteBufCodecs.FLOAT);
+        addKey(double.class, ByteBufCodecs.DOUBLE);
+        addKey(Double.class, ByteBufCodecs.DOUBLE);
+
+        // オブジェクト・データの塊
+        addKey(String.class, ByteBufCodecs.STRING_UTF8);
+        addKey(Tag.class, ByteBufCodecs.TAG);
+        addKey(CompoundTag.class, ByteBufCodecs.COMPOUND_TAG);
+        addKey(Vector3fc.class, ByteBufCodecs.VECTOR3F);
+        addKey(Quaternionfc.class, ByteBufCodecs.QUATERNIONF);
+        addKey(GameProfile.class, ByteBufCodecs.GAME_PROFILE);
+
+        // バニラオブジェクト
+        addKey(BlockPos.class, BlockPos.STREAM_CODEC);
+        addKey(ItemStack.class, ItemStack.STREAM_CODEC);
+        addKey(Identifier.class, Identifier.STREAM_CODEC);
+        addKey(Component.class, ComponentSerialization.STREAM_CODEC);
+
+        // 動的レジストリ解決型（RegistryFriendlyByteBufが必要なもの）
+        addKey(Block.class, ByteBufCodecs.registry(Registries.BLOCK));
+        addKey(Item.class, ByteBufCodecs.registry(Registries.ITEM));
+        addKey(Fluid.class, ByteBufCodecs.registry(Registries.FLUID));
+        addKey(Biome.class, ByteBufCodecs.registry(Registries.BIOME));
+        addKey(DimensionType.class, ByteBufCodecs.registry(Registries.DIMENSION_TYPE));
+        addKey(MobEffect.class, ByteBufCodecs.registry(Registries.MOB_EFFECT));
+    }
+
+    public static <T> void addKey(Class<T> key, StreamCodec<? extends ByteBuf, T> value) {
+        StreamCodecKey.put(key, value);
     }
 }
