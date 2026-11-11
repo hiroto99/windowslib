@@ -309,11 +309,16 @@ public class PacketManager {
                     StreamCodec<? extends ByteBuf, ?> keyCodec = resolveCodecForClass(keyClass);
                     StreamCodec<? extends ByteBuf, ?> valueCodec = resolveCodecForClass(valueClass);
 
+                    StreamCodec rawKeyCodec = keyCodec;
+                    StreamCodec rawValueCodec = valueCodec;
+
                     // 4. 💡 Minecraftバニラの「ByteBufCodecs.map」に流し込んで Map 用コーデックに変換
                     // シグネチャ: map(IntFunction, StreamCodec, StreamCodec)
                     // ※第1引数には、読み込み時にどのMap実装を使うか（例: HashMap::new）を指定するヘルパーが必要です。
                     // バニラの標準オーバーロードに合わせたリフレクション呼び出しを行います。
-                    return SmartCodec.makeMapCodec(keyCodec, valueCodec);
+                    
+                    // キャストを挟んで呼び出す（警告が出ますがコンパイルは通ります）
+                    return SmartCodec.makeMapCodec(rawKeyCodec, rawValueCodec);
                 }
             }
         }
