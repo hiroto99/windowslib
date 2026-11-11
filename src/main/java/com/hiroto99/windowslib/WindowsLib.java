@@ -45,13 +45,6 @@ public class WindowsLib {
         modEventBus.addListener(ModEvents::onRegisterPayloads);
     }
 
-    // You can use SubscribeEvent and let the Event Bus discover methods to call
-    @SubscribeEvent
-    public void onServerStarting(ServerStartingEvent event) {
-        // Do something when the server starts
-        LOGGER.info("HELLO from server starting");
-    }
-
     public static void register(String modPackagePath) {
         AutoDataGenProvider.register(modPackagePath);
         PacketManager.register(modPackagePath);
