@@ -3,6 +3,7 @@ package com.hiroto99.windowslib;
 import com.hiroto99.windowslib.core.simplecommand.CommandManager;
 import com.hiroto99.windowslib.core.simplepacket.PacketManager;
 import com.hiroto99.windowslib.datagen.AutoDataGenProvider;
+import com.hiroto99.windowslib.modify.ModifyRegister;
 import com.hiroto99.windowslib.worldgen.ModBiomeModifiers;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import org.slf4j.Logger;
@@ -33,21 +34,16 @@ public class WindowsLib {
 
         ModBiomeModifiers.register(modEventBus);
 
-        // Register ourselves for server and other game events we are interested in.
-        // Note that this is necessary if and only if we want *this* class (WindowsLib) to respond directly to events.
-        // Do not add this line if there are no @SubscribeEvent-annotated functions in this class, like onServerStarting() below.
-        NeoForge.EVENT_BUS.register(this);
-
         modEventBus.addListener(AutoDataGenProvider::gatherData);
 
         NeoForge.EVENT_BUS.register(ModEvents.class);
         NeoForge.EVENT_BUS.addListener(ModEvents::onRegisterCommands);
-        modEventBus.addListener(ModEvents::onRegisterPayloads);
     }
 
     public static void register(String modPackagePath) {
         AutoDataGenProvider.register(modPackagePath);
         PacketManager.register(modPackagePath);
         CommandManager.register(modPackagePath);
+        ModifyRegister.register(modPackagePath);
     }
 }
