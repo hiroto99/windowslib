@@ -37,6 +37,7 @@ public class WindowsLib {
         modEventBus.addListener(AutoDataGenProvider::gatherData);
 
         NeoForge.EVENT_BUS.register(ModEvents.class);
+        ModEvents.register(modEventBus);
         NeoForge.EVENT_BUS.addListener(ModEvents::onRegisterCommands);
     }
 
