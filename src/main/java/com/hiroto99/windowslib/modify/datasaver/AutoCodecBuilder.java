@@ -1,6 +1,5 @@
 package com.hiroto99.windowslib.modify.datasaver;
 
-import com.hiroto99.windowslib.modify.ModifySaver;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.DynamicOps;
@@ -72,13 +71,13 @@ public class AutoCodecBuilder {
         AutoCodecBuilder parent = this;
         return new AutoCodecBuilder() {
             @Override
-            public <T> AutoCodecBuilder add(String key, com.mojang.serialization.Codec<T> codec, java.util.function.Supplier<T> getter, java.util.function.Consumer<T> setter) {
+            public <T> AutoCodecBuilder add(String key, Codec<T> codec, Supplier<T> getter, Consumer<T> setter) {
                 parent.add(prefix + "/" + key, codec, getter, setter);
                 return this;
             }
 
             @Override
-            public <T> AutoCodecBuilder addOptional(String key, com.mojang.serialization.Codec<T> codec, T defaultValue, java.util.function.Supplier<T> getter, java.util.function.Consumer<T> setter) {
+            public <T> AutoCodecBuilder addOptional(String key, Codec<T> codec, T defaultValue, Supplier<T> getter, Consumer<T> setter) {
                 parent.addOptional(prefix + "/" + key, codec, defaultValue, getter, setter);
                 return this;
             }

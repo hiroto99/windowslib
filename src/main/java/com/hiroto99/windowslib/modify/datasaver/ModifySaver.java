@@ -1,7 +1,6 @@
-package com.hiroto99.windowslib.modify;
+package com.hiroto99.windowslib.modify.datasaver;
 
 import com.hiroto99.windowslib.WindowsLib;
-import com.hiroto99.windowslib.modify.datasaver.AutoCodecBuilder;
 import com.mojang.serialization.Codec;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;

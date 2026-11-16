@@ -1,7 +1,7 @@
 package com.hiroto99.windowslib.modify;
 
 import com.hiroto99.windowslib.core.simplecommand.SimpleCommand;
-import com.hiroto99.windowslib.modify.datasaver.ModifySystemManager;
+import com.hiroto99.windowslib.modify.datasaver.SaveableModify;
 import net.minecraft.resources.Identifier;
 import org.reflections.Reflections;
 

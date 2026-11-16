@@ -14,20 +14,15 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.effect.MobEffect;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.level.material.Fluid;
-import net.neoforged.neoforge.fluids.crafting.FluidIngredient;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
-import net.neoforged.neoforge.transfer.energy.EnergyHandler;
-import net.neoforged.neoforge.transfer.energy.SimpleEnergyHandler;
 import org.joml.Quaternionfc;
-import org.joml.Vector3f;
 import org.joml.Vector3fc;
 import org.reflections.Reflections;
 
@@ -78,17 +73,26 @@ public class PacketManager {
 
     private static <T extends SimplePacket> void registerSinglePacket(PayloadRegistrar registrar, Class<T> clazz) {
         try {
-            var typeField = clazz.getField("TYPE");
+            var typeField = clazz.getMethod("type");
             var annotation = clazz.getAnnotation(AutoPacket.class);
 
-            var type = (CustomPacketPayload.Type<T>) typeField.get(null);
-            var codec = createRecordCodec(clazz);
+            var type = (CustomPacketPayload.Type<T>) typeField.invoke(null);
 
-            if (annotation.value() != TargetSide.CLIENT) {
+            StreamCodec<RegistryFriendlyByteBuf, T> codec;
+            if (annotation.generatecodec()){
+                codec = createRecordCodec(clazz);
+            } else {
+                codec = (StreamCodec<RegistryFriendlyByteBuf, T>) clazz.getMethod("streamCodec").invoke(null);
+            }
+
+            if (annotation.value() == TargetSide.CLIENT) {
+                registrar.playToClient(type, codec, (packet, context) -> packet.handle(context));
+            }
+            if (annotation.value() == TargetSide.SERVER) {
                 registrar.playToServer(type, codec, (packet, context) -> packet.handle(context));
             }
-            if (annotation.value() != TargetSide.SERVER) {
-                registrar.playToClient(type, codec, (packet, context) -> packet.handle(context));
+            if (annotation.value() == TargetSide.BOTH) {
+                registrar.playBidirectional(type, codec, (packet, context) -> packet.handle(context));
             }
         } catch (Exception e) {
             System.err.println("Failed to register packet: " + clazz.getName());

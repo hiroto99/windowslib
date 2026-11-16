@@ -1,7 +1,10 @@
-package com.hiroto99.windowslib.modify.datasaver;
+package com.hiroto99.windowslib.modify;
 
-import com.hiroto99.windowslib.modify.ModifySaver;
-import com.hiroto99.windowslib.modify.SaveableModify;
+import com.hiroto99.windowslib.modify.datasaver.AutoCodecBuilder;
+import com.hiroto99.windowslib.modify.datasaver.ModifySaver;
+import com.hiroto99.windowslib.modify.datasaver.SaveableModify;
+import com.hiroto99.windowslib.modify.network.ModifyPacket;
+import com.hiroto99.windowslib.modify.network.SyncableModify;
 import net.minecraft.resources.Identifier;
 
 import java.util.LinkedHashMap;
@@ -21,6 +24,11 @@ public class ModifySystemManager {
         if (modifyInstance instanceof SaveableModify saveable) {
             AutoCodecBuilder scopedBuilder = ModifySaver.BUILDER.withPrefix(id.toString());
             saveable.defineSaveFields(scopedBuilder);
+        }
+
+        // 差分同期システムへの自動登録（完全独立）
+        if (modifyInstance instanceof SyncableModify syncable) {
+            syncable.defineSyncFields(ModifyPacket.BUILDER);
         }
 
         return modifyInstance;

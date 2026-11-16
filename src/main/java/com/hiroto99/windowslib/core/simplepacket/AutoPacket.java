@@ -9,4 +9,5 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 public @interface AutoPacket {
     TargetSide value();
+    boolean generatecodec() default true;
 }
