@@ -1,6 +1,6 @@
 package com.hiroto99.windowslib.modify;
 
-import com.hiroto99.windowslib.modify.datasaver.SaveableModify;
+import com.hiroto99.windowslib.modify.network.ClientModify;
 import net.minecraft.resources.Identifier;
 import org.reflections.Reflections;
 
@@ -30,11 +30,19 @@ public class ModifyRegister {
             try {
                 // 登録されたパッケージパスごとにReflectionsを生成してスキャン
                 Reflections reflections = new Reflections(packagePath);
-                var modifyClasses = reflections.getSubTypesOf(SaveableModify.class);
+                var modifyClasses = reflections.getSubTypesOf(Modify.class);
 
-                for (Class<? extends SaveableModify> clazz : modifyClasses) {
+                for (Class<? extends Modify> clazz : modifyClasses) {
                     if (!Modifier.isAbstract(clazz.getModifiers()) && !clazz.isInterface()) {
                         registerModify(clazz);
+                    }
+                }
+
+                var clientModifyClasses = reflections.getSubTypesOf(ClientModify.class);
+
+                for (Class<? extends ClientModify> clazz : clientModifyClasses) {
+                    if (!Modifier.isAbstract(clazz.getModifiers()) && !clazz.isInterface()) {
+                        registerClientModify(clazz);
                     }
                 }
             } catch (Exception e) {
@@ -44,11 +52,21 @@ public class ModifyRegister {
         }
     }
 
-    private static <T extends SaveableModify> void registerModify(Class<T> clazz)
+    private static <T extends Modify> void registerModify(Class<T> clazz)
             throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         var constructor = clazz.getConstructor().newInstance();
         Method method = clazz.getMethod("type");
         ModifySystemManager.registerModify(
+                (Identifier) method.invoke(constructor),
+                constructor
+        );
+    }
+
+    private static <T extends ClientModify> void registerClientModify(Class<T> clazz)
+            throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        var constructor = clazz.getConstructor().newInstance();
+        Method method = clazz.getMethod("type");
+        ModifySystemManager.registerModifyClient(
                 (Identifier) method.invoke(constructor),
                 constructor
         );

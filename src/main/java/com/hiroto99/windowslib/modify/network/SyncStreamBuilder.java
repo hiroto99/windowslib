@@ -132,7 +132,7 @@ public class SyncStreamBuilder {
     }
 
     // プレフィックス自動付与ヘルパー（システム側でModifyIDを付ける用）
-    public SyncStreamBuilder withPrefix(java.lang.String prefix) {
+    public SyncStreamBuilder withPrefix(String prefix) {
         SyncStreamBuilder parent = this;
         return new SyncStreamBuilder() {
             @Override

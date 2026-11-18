@@ -1,13 +1,8 @@
 package com.hiroto99.windowslib.modify.datasaver;
 
-import net.minecraft.resources.Identifier;
+import com.hiroto99.windowslib.modify.Modify;
 
-public interface SaveableModify {
-    /**
-     * このModifyの保存用のキーを定義する
-     */
-    Identifier type();
-
+public interface SaveableModify extends Modify {
     /**
      * このModifyが持つ保存対象変数をビルダーへ定義する
      */

@@ -2,7 +2,7 @@ package com.hiroto99.windowslib.modify;
 
 import com.hiroto99.windowslib.modify.datasaver.ModifySaver;
 import com.hiroto99.windowslib.modify.datasaver.SaveableModify;
-import com.hiroto99.windowslib.modify.network.ClientSyncModify;
+import com.hiroto99.windowslib.modify.network.ClientModify;
 import com.hiroto99.windowslib.modify.network.ModifyPacket;
 import com.hiroto99.windowslib.modify.network.ServerSyncModify;
 import net.minecraft.resources.Identifier;
@@ -18,7 +18,7 @@ public class ModifySystemManager {
      * システムにModifyを登録するメソッド
      * （システム側で自動的にセーブ対象か判定し、ビルダーへ登録する）
      */
-    public static <T> T registerModify(Identifier id, T modifyInstance) {
+    public static <T extends Modify> T registerModify(Identifier id, T modifyInstance) {
         MODIFIES.put(id, modifyInstance);
 
         if (modifyInstance instanceof SaveableModify saveable) {
@@ -31,10 +31,10 @@ public class ModifySystemManager {
     }
 
     // クライアント初期化時に呼ぶ登録メソッド
-    public static <T> T registerModifyClient(Identifier id, T clientModifyInstance) {
+    public static <T extends ClientModify> T registerModifyClient(Identifier id, T clientModifyInstance) {
         CLIENT_MODIFIES.put(id, clientModifyInstance);
 
-        if (clientModifyInstance instanceof ClientSyncModify clientSync) {
+        if (clientModifyInstance instanceof ClientModify clientSync) {
             clientSync.defineClientSync(ModifyPacket.BUILDER.withPrefix(id.toString()));
         }
         return clientModifyInstance;
