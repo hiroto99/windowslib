@@ -9,6 +9,9 @@ import com.mojang.serialization.RecordBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -84,17 +87,45 @@ public class AutoCodecBuilder {
         };
     }
 
+    public boolean hasAnyChanged() {
+        boolean changed = false;
+        for (FieldEntry<?> entry : this.entries) {
+            if (entry.checkAndUpdateDirty()) {
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
     // 個別の変数定義を保持する内部レコード
-    private record FieldEntry<V>(
-            String key,
-            Codec<V> codec,
-            Supplier<V> getter,
-            Consumer<V> setter,
-            boolean optional,
-            V defaultValue
-    ) {
+    private class FieldEntry<V> {
+        final String key;
+        final Codec<V> codec;
+        final Supplier<V> getter;
+        final Consumer<V> setter;
+        final boolean optional;
+        final V defaultValue;
+        Object lastSavedSnapshot; // ★ 前回保存・確認した値のスナップショット
+
         FieldEntry(String key, Codec<V> codec, Supplier<V> getter, Consumer<V> setter) {
             this(key, codec, getter, setter, false, null);
+        }
+
+        FieldEntry(String key, Codec<V> codec, Supplier<V> getter, Consumer<V> setter, boolean optional, V defaultValue) {
+            this.key = key;
+            this.codec = codec;
+            this.getter = getter;
+            this.setter = setter;
+            this.optional = optional;
+            this.defaultValue = defaultValue;
+            lastSavedSnapshot = createSnapshot(getter.get());
+        }
+
+        private Object createSnapshot(V value) {
+            if (value instanceof List<?> list) return List.copyOf(list);
+            if (value instanceof Map<?, ?> map) return Map.copyOf(map);
+            if (value instanceof Set<?> set) return Set.copyOf(set);
+            return value;
         }
 
         <T> DataResult<V> decodeAndApply(DynamicOps<T> ops, MapLike<T> input) {
@@ -117,6 +148,16 @@ public class AutoCodecBuilder {
                 return builder.add(this.key, this.codec.encodeStart(ops, currentValue));
             }
             return builder;
+        }
+
+        // 変化があったか判定し、あればスナップショットを更新して true を返す
+        boolean checkAndUpdateDirty() {
+            V current = this.getter.get();
+            if (!java.util.Objects.equals(this.lastSavedSnapshot, current)) {
+                this.lastSavedSnapshot = createSnapshot(current);
+                return true;
+            }
+            return false;
         }
     }
 }
