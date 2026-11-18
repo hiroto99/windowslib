@@ -10,7 +10,7 @@ public interface SimplePacket extends CustomPacketPayload {
     void handle(IPayloadContext context);
 
     // 各パケットでStreamCodecを手動で指定する場合
-    default <T> StreamCodec<RegistryFriendlyByteBuf, T> streamCodec() {
+    default <T extends SimplePacket> StreamCodec<RegistryFriendlyByteBuf, T> streamCodec() {
         return null;
     }
 }

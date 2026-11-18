@@ -14,7 +14,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.util.List;
 
-@AutoPacket(value = TargetSide.BOTH, generatecodec = false)
+@AutoPacket(value = TargetSide.CLIENT, generatecodec = false)
 public record ModifyPacket(List<SyncStreamBuilder.PendingUpdate<?>> updates) implements SimplePacket {
     public static final Type<ModifyPacket> TYPE =
             new Type<>(Identifier.fromNamespaceAndPath(WindowsLib.MODID, "modify_sync"));
@@ -60,6 +60,7 @@ public record ModifyPacket(List<SyncStreamBuilder.PendingUpdate<?>> updates) imp
         return STREAM_CODEC;
     }
 
+    // ★ メインスレッド上で安全に値を反映し、コールバックを発火させる
     @Override
     public void handle(IPayloadContext context) {
         context.enqueueWork(() -> {

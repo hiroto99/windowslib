@@ -1,13 +1,13 @@
-package com.hiroto99.windowslib.modify;
+package com.hiroto99.windowslib.modify.network;
 
-import com.hiroto99.windowslib.modify.network.ModifyPacket;
+import com.hiroto99.windowslib.WindowsLib;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
-@EventBusSubscriber(modid = "mymod")
+@EventBusSubscriber(modid = WindowsLib.MODID)
 public class ModSyncEvents {
     // 毎Tick終了時に変化をチェックし、変わった変数がある時だけ自動送信
     @SubscribeEvent

@@ -3,10 +3,7 @@ package com.hiroto99.windowslib.core.simplegui;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ContainerLevelAccess;
-import net.minecraft.world.inventory.MenuType;
-import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.inventory.*;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -39,6 +36,19 @@ public abstract class BaseMenu<T extends BlockEntity> extends AbstractContainerM
     private final List<ToggleableSlot> TOGGLEABLE_SLOT_LIST = new java.util.ArrayList<>();
     private final List<Integer> RESULT_INVENTORY_SLOT_LIST = new java.util.ArrayList<>();
 
+    public static class CountableItemStacksResourceHandler extends ItemStacksResourceHandler {
+        private final int size;
+
+        public CountableItemStacksResourceHandler(int size) {
+            super(size);
+            this.size = size;
+        }
+
+        public int getSize() {
+            return size;
+        }
+    }
+
     // --- コンストラクタのバリエーション ---
 
     // ① コマンド用（スロット数指定可能・デフォルト1）
@@ -47,21 +57,55 @@ public abstract class BaseMenu<T extends BlockEntity> extends AbstractContainerM
     }
 
     public BaseMenu(@Nullable MenuType<?> menuType, int containerId, Inventory inventory, int containerSlotsSize) {
-        this(menuType, containerId, inventory, (BlockEntity) null, containerSlotsSize, true);
+        this(menuType, containerId, inventory, (BlockEntity) null, new CountableItemStacksResourceHandler(containerSlotsSize), true);
     }
 
     public BaseMenu(@Nullable MenuType<?> menuType, int containerId, Inventory inventory, int containerSlotsSize, boolean hasPlayerInventory) {
-        this(menuType, containerId, inventory, (BlockEntity) null, containerSlotsSize, hasPlayerInventory);
+        this(menuType, containerId, inventory, (BlockEntity) null, new CountableItemStacksResourceHandler(containerSlotsSize), hasPlayerInventory);
     }
 
-    // ② FriendlyByteBuf用
+    // ①のロード対応版
+    public BaseMenu(@Nullable MenuType<?> menuType, int containerId, Inventory inventory, CountableItemStacksResourceHandler handler) {
+        this(menuType, containerId, inventory, (BlockEntity) null, handler, true);
+    }
+
+    public BaseMenu(@Nullable MenuType<?> menuType, int containerId, Inventory inventory, CountableItemStacksResourceHandler handler, boolean hasPlayerInventory) {
+        this(menuType, containerId, inventory, (BlockEntity) null, handler, hasPlayerInventory);
+    }
+
+    // ② ブロック用（スロット数指定可能・デフォルト1）
+    public BaseMenu(@Nullable MenuType<?> menuType, int containerId, Inventory inventory, @Nullable BlockEntity blockEntity) {
+        this(menuType, containerId, inventory, blockEntity, 1);
+    }
+
+    public BaseMenu(@Nullable MenuType<?> menuType, int containerId, Inventory inventory, @Nullable BlockEntity blockEntity, int containerSlotsSize) {
+        this(menuType, containerId, inventory, blockEntity, new CountableItemStacksResourceHandler(containerSlotsSize), true);
+    }
+
+    public BaseMenu(@Nullable MenuType<?> menuType, int containerId, Inventory inventory, @Nullable BlockEntity blockEntity, int containerSlotsSize, boolean hasPlayerInventory) {
+        this(
+                menuType,
+                containerId,
+                inventory,
+                blockEntity,
+                new CountableItemStacksResourceHandler(containerSlotsSize),
+                hasPlayerInventory
+        );
+    }
+
+    // ②のロード対応版
+    public BaseMenu(@Nullable MenuType<?> menuType, int containerId, Inventory inventory, @Nullable BlockEntity blockEntity, CountableItemStacksResourceHandler handler) {
+        this(menuType, containerId, inventory, blockEntity, handler, true);
+    }
+
+    // ③ FriendlyByteBuf用
     public BaseMenu(@Nullable MenuType<?> menuType, int containerId, Inventory inventory, FriendlyByteBuf extraData, int containerSlotsSize) {
         this(
                 menuType,
                 containerId,
                 inventory,
                 (extraData != null && extraData.isReadable()) ? inventory.player.level().getBlockEntity(extraData.readBlockPos()) : null,
-                containerSlotsSize,
+                new CountableItemStacksResourceHandler(containerSlotsSize),
                 true
         );
     }
@@ -72,17 +116,24 @@ public abstract class BaseMenu<T extends BlockEntity> extends AbstractContainerM
                 containerId,
                 inventory,
                 (extraData != null && extraData.isReadable()) ? inventory.player.level().getBlockEntity(extraData.readBlockPos()) : null,
-                containerSlotsSize,
+                new CountableItemStacksResourceHandler(containerSlotsSize),
                 hasPlayerInventory
         );
     }
 
-    // ③ メインのコンストラクタ（サイズ指定でItemStacksResourceHandlerを自動生成）
-    public BaseMenu(@Nullable MenuType<?> menuType, int containerId, Inventory inventory, @Nullable BlockEntity blockEntity, int containerSlotsSize, boolean hasPlayerInventory) {
+    // ④ メインのコンストラクタ（サイズ指定でItemStacksResourceHandlerを自動生成）
+    public BaseMenu(
+            @Nullable MenuType<?> menuType,
+            int containerId,
+            Inventory inventory,
+            @Nullable BlockEntity blockEntity,
+            CountableItemStacksResourceHandler handler,
+            boolean hasPlayerInventory
+    ) {
         super(menuType, containerId);
         this.blockEntity = (T) blockEntity;
         this.level = inventory.player.level();
-        this.handler = new ItemStacksResourceHandler(containerSlotsSize);
+        this.handler = handler;
 
         if (blockEntity != null) {
             this.block = level.getBlockState(blockEntity.getBlockPos()).getBlock();
@@ -97,14 +148,20 @@ public abstract class BaseMenu<T extends BlockEntity> extends AbstractContainerM
         }
 
         // 機械側（設定用など）のスロットがある場合のみ追加
-        if (containerSlotsSize > 0) {
+        if (handler.getSize() > 0) {
             addContainers(this.handler);
         }
 
         ALL_INVENTORY_SLOT_INDEX = VANILLA_SLOT_COUNT + BLOCK_INVENTORY_SLOT_COUNT;
+
+        ContainerData data = getContainerData();
+        if (data != null) {
+            addDataSlots(data);
+        }
     }
 
     public abstract void addContainers(ItemStacksResourceHandler handler);
+    public abstract ContainerData getContainerData();
 
     @Override
     protected Slot addSlot(Slot slot) {

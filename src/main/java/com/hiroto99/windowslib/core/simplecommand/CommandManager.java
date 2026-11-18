@@ -30,9 +30,9 @@ public class CommandManager {
             try {
                 // 登録されたパッケージパスごとにReflectionsを生成してスキャン
                 Reflections reflections = new Reflections(packagePath);
-                var packetClasses = reflections.getTypesAnnotatedWith(AutoCommand.class);
+                var commandClasses = reflections.getTypesAnnotatedWith(AutoCommand.class);
 
-                for (Class<?> clazz : packetClasses) {
+                for (Class<?> clazz : commandClasses) {
                     if (SimpleCommand.class.isAssignableFrom(clazz)) {
                         registerCommand(dispatcher, (Class<? extends SimpleCommand>) clazz);
                     }

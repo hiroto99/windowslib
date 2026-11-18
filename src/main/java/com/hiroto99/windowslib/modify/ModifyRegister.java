@@ -1,12 +1,12 @@
 package com.hiroto99.windowslib.modify;
 
-import com.hiroto99.windowslib.core.simplecommand.SimpleCommand;
 import com.hiroto99.windowslib.modify.datasaver.SaveableModify;
 import net.minecraft.resources.Identifier;
 import org.reflections.Reflections;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -30,10 +30,10 @@ public class ModifyRegister {
             try {
                 // 登録されたパッケージパスごとにReflectionsを生成してスキャン
                 Reflections reflections = new Reflections(packagePath);
-                var packetClasses = reflections.getSubTypesOf(SaveableModify.class);
+                var modifyClasses = reflections.getSubTypesOf(SaveableModify.class);
 
-                for (Class<? extends SaveableModify> clazz : packetClasses) {
-                    if (SimpleCommand.class.isAssignableFrom(clazz)) {
+                for (Class<? extends SaveableModify> clazz : modifyClasses) {
+                    if (!Modifier.isAbstract(clazz.getModifiers()) && !clazz.isInterface()) {
                         registerModify(clazz);
                     }
                 }

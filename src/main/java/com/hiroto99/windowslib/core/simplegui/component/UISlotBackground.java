@@ -15,7 +15,7 @@ public class UISlotBackground implements IUIComponent {
     private final int width = 18;
     private final int height = 18;
     private final Identifier slotTexture; // スロット用のテクスチャを指定
-    private static final Identifier DEFAULT_TEXTURE = Identifier.fromNamespaceAndPath(WindowsLib.MODID, "textures/gui/slot.png");
+    private static final Identifier DEFAULT_TEXTURE = Identifier.withDefaultNamespace("container/slot");
     private Supplier<StringTranslator> onHover; // ツールチップ用の処理
 
     public UISlotBackground() {
@@ -33,7 +33,7 @@ public class UISlotBackground implements IUIComponent {
     @Override
     public void render(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         // 例: 指定したスロット用テクスチャを描画
-        graphics.blit(RenderPipelines.GUI_TEXTURED, slotTexture, x, y, 0, 0, width, height, width, height);
+        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, slotTexture, width, height, 0, 0, x, y, width, height);
     }
 
     @Override

@@ -1,10 +1,10 @@
 package com.hiroto99.windowslib.modify;
 
-import com.hiroto99.windowslib.modify.datasaver.AutoCodecBuilder;
 import com.hiroto99.windowslib.modify.datasaver.ModifySaver;
 import com.hiroto99.windowslib.modify.datasaver.SaveableModify;
+import com.hiroto99.windowslib.modify.network.ClientSyncModify;
 import com.hiroto99.windowslib.modify.network.ModifyPacket;
-import com.hiroto99.windowslib.modify.network.SyncableModify;
+import com.hiroto99.windowslib.modify.network.ServerSyncModify;
 import net.minecraft.resources.Identifier;
 
 import java.util.LinkedHashMap;
@@ -12,6 +12,7 @@ import java.util.Map;
 
 public class ModifySystemManager {
     private static final Map<Identifier, Object> MODIFIES = new LinkedHashMap<>();
+    private static final Map<Identifier, Object> CLIENT_MODIFIES = new LinkedHashMap<>();
 
     /**
      * システムにModifyを登録するメソッド
@@ -20,21 +21,28 @@ public class ModifySystemManager {
     public static <T> T registerModify(Identifier id, T modifyInstance) {
         MODIFIES.put(id, modifyInstance);
 
-        // ★ システム側が主体となってビルダーへ自動登録（名前空間プレフィックスも自動付与）
         if (modifyInstance instanceof SaveableModify saveable) {
-            AutoCodecBuilder scopedBuilder = ModifySaver.BUILDER.withPrefix(id.toString());
-            saveable.defineSaveFields(scopedBuilder);
+            saveable.defineSaveFields(ModifySaver.BUILDER.withPrefix(id.toString()));
         }
-
-        // 差分同期システムへの自動登録（完全独立）
-        if (modifyInstance instanceof SyncableModify syncable) {
-            syncable.defineSyncFields(ModifyPacket.BUILDER);
+        if (modifyInstance instanceof ServerSyncModify serverSync) {
+            serverSync.defineServerSync(ModifyPacket.BUILDER.withPrefix(id.toString()));
         }
-
         return modifyInstance;
     }
 
+    // クライアント初期化時に呼ぶ登録メソッド
+    public static <T> T registerModifyClient(Identifier id, T clientModifyInstance) {
+        CLIENT_MODIFIES.put(id, clientModifyInstance);
+
+        if (clientModifyInstance instanceof ClientSyncModify clientSync) {
+            clientSync.defineClientSync(ModifyPacket.BUILDER.withPrefix(id.toString()));
+        }
+        return clientModifyInstance;
+    }
     public static Map<Identifier, Object> getAll() {
         return Map.copyOf(MODIFIES);
+    }
+    public static Map<Identifier, Object> getAllClient() {
+        return Map.copyOf(CLIENT_MODIFIES);
     }
 }

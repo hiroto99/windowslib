@@ -73,16 +73,14 @@ public class PacketManager {
 
     private static <T extends SimplePacket> void registerSinglePacket(PayloadRegistrar registrar, Class<T> clazz) {
         try {
-            var typeField = clazz.getMethod("type");
+            var type = findPacketType(clazz);
             var annotation = clazz.getAnnotation(AutoPacket.class);
-
-            var type = (CustomPacketPayload.Type<T>) typeField.invoke(null);
 
             StreamCodec<RegistryFriendlyByteBuf, T> codec;
             if (annotation.generatecodec()){
                 codec = createRecordCodec(clazz);
             } else {
-                codec = (StreamCodec<RegistryFriendlyByteBuf, T>) clazz.getMethod("streamCodec").invoke(null);
+                codec = findStreamCodec(clazz);
             }
 
             if (annotation.value() == TargetSide.CLIENT) {
@@ -98,6 +96,56 @@ public class PacketManager {
             System.err.println("Failed to register packet: " + clazz.getName());
             e.printStackTrace();
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T extends SimplePacket> CustomPacketPayload.Type<T> findPacketType(Class<T> clazz) throws Exception {
+        // 1. クラス内に定義されたすべてのフィールドを走査（private含む）
+        for (Field field : clazz.getDeclaredFields()) {
+            // static かつ 型が CustomPacketPayload.Type と一致するものを探す
+            if (Modifier.isStatic(field.getModifiers()) && CustomPacketPayload.Type.class.isAssignableFrom(field.getType())) {
+                field.setAccessible(true);
+                Object value = field.get(null);
+                if (value != null) {
+                    return (CustomPacketPayload.Type<T>) value;
+                }
+            }
+        }
+
+        // 2. もし static フィールドが見つからなければ、デフォルトコンストラクタからインスタンスを生成して type() を呼ぶ（フォールバック）
+        try {
+            T dummyInstance = clazz.getDeclaredConstructor().newInstance();
+            return (CustomPacketPayload.Type<T>) dummyInstance.type();
+        } catch (NoSuchMethodException ignored) {
+            // デフォルトコンストラクタが無い場合はエラーへ進む
+        }
+
+        throw new IllegalStateException("No static CustomPacketPayload.Type field found in packet class: " + clazz.getName());
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T extends SimplePacket> StreamCodec<RegistryFriendlyByteBuf, T> findStreamCodec(Class<T> clazz) throws Exception {
+        // 1. クラス内に定義されたすべてのフィールドを走査（private含む）
+        for (Field field : clazz.getDeclaredFields()) {
+            // static かつ 型が StreamCodec と一致するものを探す
+            if (Modifier.isStatic(field.getModifiers()) && StreamCodec.class.isAssignableFrom(field.getType())) {
+                field.setAccessible(true);
+                Object value = field.get(null);
+                if (value != null) {
+                    return (StreamCodec<RegistryFriendlyByteBuf, T>) value;
+                }
+            }
+        }
+
+        // 2. もし static フィールドが見つからなければ、デフォルトコンストラクタからインスタンスを生成して streamCodec() を呼ぶ（フォールバック）
+        try {
+            T dummyInstance = clazz.getDeclaredConstructor().newInstance();
+            return dummyInstance.streamCodec();
+        } catch (NoSuchMethodException ignored) {
+            // デフォルトコンストラクタが無い場合はエラーへ進む
+        }
+
+        throw new IllegalStateException("No static StreamCodec field found in packet class: " + clazz.getName());
     }
 
     /**
