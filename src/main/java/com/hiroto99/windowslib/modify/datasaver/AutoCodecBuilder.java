@@ -8,6 +8,8 @@ import com.mojang.serialization.MapLike;
 import com.mojang.serialization.RecordBuilder;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -132,14 +134,29 @@ public class AutoCodecBuilder {
             T rawValue = input.get(this.key);
             if (rawValue == null) {
                 if (this.optional) {
-                    this.setter.accept(this.defaultValue);
+                    this.setter.accept(wrapMutableIfCollection(this.defaultValue));
                     return DataResult.success(this.defaultValue);
                 }
                 return DataResult.error(() -> "Missing required key: " + this.key);
             }
             DataResult<V> parsed = this.codec.parse(ops, rawValue);
-            parsed.ifSuccess(this.setter);
+            parsed.ifSuccess(val -> this.setter.accept(wrapMutableIfCollection(val)));
             return parsed;
+        }
+
+        // ★ 不変の List / Map / Set を自動で可変コレクションに変換するヘルパー
+        @SuppressWarnings("unchecked")
+        private V wrapMutableIfCollection(V value) {
+            if (value instanceof List<?> list && !(list instanceof ArrayList<?>)) {
+                return (V) new ArrayList<>(list);
+            }
+            if (value instanceof Map<?, ?> map && !(map instanceof HashMap<?, ?>)) {
+                return (V) new HashMap<>(map);
+            }
+            if (value instanceof Set<?> set && !(set instanceof HashSet<?>)) {
+                return (V) new HashSet<>(set);
+            }
+            return value;
         }
 
         <T> RecordBuilder<T> encodeFromGetter(DynamicOps<T> ops, RecordBuilder<T> builder) {
