@@ -44,7 +44,7 @@ public record Index2D(int x, int y) {
     }
 
     public boolean isWithin(List2D<?> list) {
-        return isWithin(list.width, list.height);
+        return isWithin(list.width(), list.height());
     }
 
     // 範囲外にはみ出た座標を無理やり範囲内に収める（ドラッグ操作やカーソル移動に便利）
