@@ -21,10 +21,10 @@ public record Index2D(int x, int y) {
     public Index2D down()       { return down(1); }
     public Index2D left()       { return left(1); }
     public Index2D right()      { return right(1); }
-    public Index2D up(int d)    { return new Index2D(x, y - 1); }
-    public Index2D down(int d)  { return new Index2D(x, y + 1); }
-    public Index2D left(int d)  { return new Index2D(x - 1, y); }
-    public Index2D right(int d) { return new Index2D(x + 1, y); }
+    public Index2D up(int d)    { return new Index2D(x, y - d); }
+    public Index2D down(int d)  { return new Index2D(x, y + d); }
+    public Index2D left(int d)  { return new Index2D(x - d, y); }
+    public Index2D right(int d) { return new Index2D(x + d, y); }
 
     // 周囲4方向・8方向を一括取得（塗りつぶしや輪郭抽出、隣接判定に便利）
     public List<Index2D> neighbors4() {
@@ -45,6 +45,10 @@ public record Index2D(int x, int y) {
 
     public boolean isWithin(List2D<?> list) {
         return isWithin(list.width(), list.height());
+    }
+
+    public boolean isValid() {
+        return x >= 0 && y >= 0;
     }
 
     // 範囲外にはみ出た座標を無理やり範囲内に収める（ドラッグ操作やカーソル移動に便利）
